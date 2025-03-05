@@ -1,0 +1,7 @@
+appsettings.Development.json
+appsettings.json
+/.vs
+/bin
+/obj
+/Logs
+Properties/PublishProfiles/FTPProfile.pubxml.user
