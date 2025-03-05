@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ArandanoIRT-Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+22ce85c2dba2506a892d90739c8e820e2b350ab7")]
 [assembly: System.Reflection.AssemblyProductAttribute("ArandanoIRT-Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ArandanoIRT-Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

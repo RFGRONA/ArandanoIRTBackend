@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -9,6 +9,27 @@
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Application\DTOs\" />
+    <Folder Include="Application\Interfaces\IServices\" />
+    <Folder Include="Application\Interfaces\" />
+    <Folder Include="Application\Mappings\" />
+    <Folder Include="Application\Validators\" />
+    <Folder Include="Application\Utilities\" />
+    <Folder Include="Application\Services\" />
+    <Folder Include="Domain\Entities\" />
+    <Folder Include="Domain\IRepositories\" />
+    <Folder Include="Domain\Exceptions\" />
+    <Folder Include="Domain\ValueObjetcts\" />
+    <Folder Include="Infrastructure\Config\" />
+    <Folder Include="Infrastructure\Data\" />
+    <Folder Include="Infrastructure\Interfaces\IServices\" />
+    <Folder Include="Infrastructure\Services\" />
+    <Folder Include="Infrastructure\Repositories\" />
+    <Folder Include="UI\Helpers\" />
+    <Folder Include="UI\Middleware\" />
   </ItemGroup>
 
 </Project>
