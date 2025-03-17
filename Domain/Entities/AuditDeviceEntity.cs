@@ -1,0 +1,48 @@
+﻿namespace ArandanoIRT_Backend.Domain.Entities
+{
+    public class AuditDeviceEntity
+    {
+        public int IdAuditDevice { get; private set; }
+        public string ColumnName { get; private set; }
+        public int RecordId { get; private set; }
+        public int CropId { get; private set; }
+        public string Action { get; private set; }
+        public string? OldValue { get; private set; }
+        public string? NewValue { get; private set; }
+        public DateTime? PerformedAt { get; private set; }
+        public int? PerformedBy { get; private set; }
+        public string? PerformedByIp { get; private set; }
+        public string? UserAgent { get; private set; }
+
+        public AuditDeviceEntity(
+            int idAuditDevice,
+            string columnName,
+            int recordId,
+            int cropId,
+            string action,
+            string? oldValue,
+            string? newValue,
+            DateTime? performedAt,
+            int? performedBy,
+            string? performedByIp,
+            string? userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(columnName))
+                throw new ArgumentException("El nombre de la columna es requerido.", nameof(columnName));
+            if (string.IsNullOrWhiteSpace(action))
+                throw new ArgumentException("La acción es requerida.", nameof(action));
+
+            IdAuditDevice = idAuditDevice;
+            ColumnName = columnName;
+            RecordId = recordId;
+            CropId = cropId;
+            Action = action;
+            OldValue = oldValue;
+            NewValue = newValue;
+            PerformedAt = performedAt;
+            PerformedBy = performedBy;
+            PerformedByIp = performedByIp;
+            UserAgent = userAgent;
+        }
+    }
+}
