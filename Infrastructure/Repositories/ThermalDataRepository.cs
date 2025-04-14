@@ -1,0 +1,34 @@
+﻿using ArandanoIRT_Backend.Domain.Entities;
+using ArandanoIRT_Backend.Domain.IRepositories;
+using ArandanoIRT_Backend.Domain.ValueObjects;
+
+namespace ArandanoIRT_Backend.Infrastructure.Repositories
+{
+    public class ThermalDataRepository : IThermalDataRepository
+    {
+        public Task<Result<ThermalDataEntity>> Create(ThermalDataEntity entity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> Delete(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<IEnumerable<ThermalDataEntity>>> GetAll()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<ThermalDataEntity>> GetById(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> Update(ThermalDataEntity entity)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
