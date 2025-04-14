@@ -21,6 +21,8 @@ public partial class Plantdata
 
     public virtual ICollection<Devicedata> Devicedata { get; set; } = new List<Devicedata>();
 
+    public virtual ICollection<Plantobservation> Plantobservation { get; set; } = new List<Plantobservation>();
+
     public virtual ICollection<Plantstatehistory> Plantstatehistory { get; set; } = new List<Plantstatehistory>();
 
     public virtual ICollection<Sensordata> Sensordata { get; set; } = new List<Sensordata>();

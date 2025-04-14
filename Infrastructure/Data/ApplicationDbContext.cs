@@ -47,6 +47,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Plantdata> Plantdata { get; set; }
 
+    public virtual DbSet<Plantobservation> Plantobservation { get; set; }
+
     public virtual DbSet<Plantstatehistory> Plantstatehistory { get; set; }
 
     public virtual DbSet<Refreshtoken> Refreshtoken { get; set; }
@@ -60,7 +62,7 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<Thermaldata> Thermaldata { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseNpgsql("Name=ConnectionString");
+            => optionsBuilder.UseNpgsql("Name=ConnectionString");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,9 +86,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Newvalue).HasColumnName("newvalue");
             entity.Property(e => e.Oldvalue).HasColumnName("oldvalue");
-            entity.Property(e => e.Performedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("performedat");
+            entity.Property(e => e.Performedat).HasColumnName("performedat");
             entity.Property(e => e.Performedby).HasColumnName("performedby");
             entity.Property(e => e.Performedbyip)
                 .HasMaxLength(45)
@@ -117,9 +117,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Newvalue).HasColumnName("newvalue");
             entity.Property(e => e.Oldvalue).HasColumnName("oldvalue");
-            entity.Property(e => e.Performedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("performedat");
+            entity.Property(e => e.Performedat).HasColumnName("performedat");
             entity.Property(e => e.Performedby).HasColumnName("performedby");
             entity.Property(e => e.Performedbyip)
                 .HasMaxLength(45)
@@ -151,9 +149,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Newvalue).HasColumnName("newvalue");
             entity.Property(e => e.Oldvalue).HasColumnName("oldvalue");
-            entity.Property(e => e.Performedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("performedat");
+            entity.Property(e => e.Performedat).HasColumnName("performedat");
             entity.Property(e => e.Performedby).HasColumnName("performedby");
             entity.Property(e => e.Performedbyip)
                 .HasMaxLength(45)
@@ -180,9 +176,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("columnname");
             entity.Property(e => e.Cropid).HasColumnName("cropid");
-            entity.Property(e => e.Performedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("performedat");
+            entity.Property(e => e.Performedat).HasColumnName("performedat");
             entity.Property(e => e.Performedby).HasColumnName("performedby");
             entity.Property(e => e.Performedbyip)
                 .HasMaxLength(45)
@@ -211,9 +205,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("columnname");
             entity.Property(e => e.Cropid).HasColumnName("cropid");
-            entity.Property(e => e.Performedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("performedat");
+            entity.Property(e => e.Performedat).HasColumnName("performedat");
             entity.Property(e => e.Performedby).HasColumnName("performedby");
             entity.Property(e => e.Performedbyip)
                 .HasMaxLength(45)
@@ -247,9 +239,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Newvalue).HasColumnName("newvalue");
             entity.Property(e => e.Oldvalue).HasColumnName("oldvalue");
-            entity.Property(e => e.Performedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("performedat");
+            entity.Property(e => e.Performedat).HasColumnName("performedat");
             entity.Property(e => e.Performedby).HasColumnName("performedby");
             entity.Property(e => e.Performedbyip)
                 .HasMaxLength(45)
@@ -274,12 +264,8 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Idchangepassword).HasColumnName("idchangepassword");
             entity.Property(e => e.Passwordresettoken).HasColumnName("passwordresettoken");
             entity.Property(e => e.Personid).HasColumnName("personid");
-            entity.Property(e => e.Resettokenexpiresat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("resettokenexpiresat");
-            entity.Property(e => e.Tokencreatedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("tokencreatedat");
+            entity.Property(e => e.Resettokenexpiresat).HasColumnName("resettokenexpiresat");
+            entity.Property(e => e.Tokencreatedat).HasColumnName("tokencreatedat");
 
             entity.HasOne(d => d.Person).WithMany(p => p.Changepassword)
                 .HasForeignKey(d => d.Personid)
@@ -295,22 +281,18 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Adminuserid, "crop_adminuserid");
 
             entity.Property(e => e.Idcrop).HasColumnName("idcrop");
-            entity.Property(e => e.Addrescrop)
+            entity.Property(e => e.Addresscrop)
                 .HasMaxLength(80)
-                .HasColumnName("addrescrop");
+                .HasColumnName("addresscrop");
             entity.Property(e => e.Adminuserid).HasColumnName("adminuserid");
             entity.Property(e => e.Cityname)
                 .HasMaxLength(124)
                 .HasColumnName("cityname");
-            entity.Property(e => e.Createdat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("createdat");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
             entity.Property(e => e.Namecrop)
                 .HasMaxLength(50)
                 .HasColumnName("namecrop");
-            entity.Property(e => e.Updatedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("updatedat");
+            entity.Property(e => e.Updatedat).HasColumnName("updatedat");
 
             entity.HasOne(d => d.Adminuser).WithMany(p => p.Crop)
                 .HasForeignKey(d => d.Adminuserid)
@@ -337,14 +319,10 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Accescode)
                 .HasMaxLength(255)
                 .HasColumnName("accescode");
-            entity.Property(e => e.Createdat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("createdat");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
             entity.Property(e => e.Createdby).HasColumnName("createdby");
             entity.Property(e => e.Cropid).HasColumnName("cropid");
-            entity.Property(e => e.Expiresat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("expiresat");
+            entity.Property(e => e.Expiresat).HasColumnName("expiresat");
             entity.Property(e => e.Statusid).HasColumnName("statusid");
             entity.Property(e => e.Usedby).HasColumnName("usedby");
 
@@ -376,18 +354,12 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Deviceid, "deviceactivation_deviceid");
 
             entity.Property(e => e.Iddeviceactivation).HasColumnName("iddeviceactivation");
-            entity.Property(e => e.Activatedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("activatedat");
+            entity.Property(e => e.Activatedat).HasColumnName("activatedat");
             entity.Property(e => e.Activationcode).HasColumnName("activationcode");
             entity.Property(e => e.Activationstatus).HasColumnName("activationstatus");
-            entity.Property(e => e.Createdat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("createdat");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
             entity.Property(e => e.Deviceid).HasColumnName("deviceid");
-            entity.Property(e => e.Expiresat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("expiresat");
+            entity.Property(e => e.Expiresat).HasColumnName("expiresat");
 
             entity.HasOne(d => d.ActivationstatusNavigation).WithMany(p => p.Deviceactivation)
                 .HasForeignKey(d => d.Activationstatus)
@@ -422,14 +394,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("namedevice");
             entity.Property(e => e.Plantid).HasColumnName("plantid");
-            entity.Property(e => e.Registeredat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("registeredat");
+            entity.Property(e => e.Registeredat).HasColumnName("registeredat");
             entity.Property(e => e.Registeredby).HasColumnName("registeredby");
             entity.Property(e => e.Statusid).HasColumnName("statusid");
-            entity.Property(e => e.Updatedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("updatedat");
+            entity.Property(e => e.Updatedat).HasColumnName("updatedat");
             entity.Property(e => e.Updatedby).HasColumnName("updatedby");
 
             entity.HasOne(d => d.Crop).WithMany(p => p.Devicedata)
@@ -464,7 +432,6 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Logmessage).HasColumnName("logmessage");
             entity.Property(e => e.Logtimestamp)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
                 .HasColumnName("logtimestamp");
             entity.Property(e => e.Logtype)
                 .HasMaxLength(50)
@@ -487,18 +454,12 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Token, "devicetoken_token");
 
             entity.Property(e => e.Iddevicetoken).HasColumnName("iddevicetoken");
-            entity.Property(e => e.Createdat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("createdat");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
             entity.Property(e => e.Deviceid).HasColumnName("deviceid");
             entity.Property(e => e.Deviceinfo).HasColumnName("deviceinfo");
-            entity.Property(e => e.Expiresat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("expiresat");
+            entity.Property(e => e.Expiresat).HasColumnName("expiresat");
             entity.Property(e => e.Refreshtoken).HasColumnName("refreshtoken");
-            entity.Property(e => e.Revokedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("revokedat");
+            entity.Property(e => e.Revokedat).HasColumnName("revokedat");
             entity.Property(e => e.Revokedbyip)
                 .HasMaxLength(45)
                 .HasColumnName("revokedbyip");
@@ -521,9 +482,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Personid, "failedloginattempt_personid");
 
             entity.Property(e => e.Idfailedloginattempt).HasColumnName("idfailedloginattempt");
-            entity.Property(e => e.Attemptdate)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("attemptdate");
+            entity.Property(e => e.Attemptdate).HasColumnName("attemptdate");
             entity.Property(e => e.Deviceinfo).HasColumnName("deviceinfo");
             entity.Property(e => e.Ipaddress)
                 .HasMaxLength(45)
@@ -550,9 +509,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Allnotifications)
                 .HasDefaultValue(true)
                 .HasColumnName("allnotifications");
-            entity.Property(e => e.Createdat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("createdat");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Email)
                 .HasMaxLength(75)
@@ -563,19 +520,13 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Isadmin)
                 .HasDefaultValue(false)
                 .HasColumnName("isadmin");
-            entity.Property(e => e.Lastloginat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("lastloginat");
+            entity.Property(e => e.Lastloginat).HasColumnName("lastloginat");
             entity.Property(e => e.Lastname)
                 .HasMaxLength(40)
                 .HasColumnName("lastname");
-            entity.Property(e => e.Lastpasswordchangeat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("lastpasswordchangeat");
+            entity.Property(e => e.Lastpasswordchangeat).HasColumnName("lastpasswordchangeat");
             entity.Property(e => e.Password).HasColumnName("password");
-            entity.Property(e => e.Updatedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("updatedat");
+            entity.Property(e => e.Updatedat).HasColumnName("updatedat");
 
             entity.HasOne(d => d.CropNavigation).WithMany(p => p.Person)
                 .HasForeignKey(d => d.Cropid)
@@ -597,13 +548,9 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Nameplant)
                 .HasMaxLength(30)
                 .HasColumnName("nameplant");
-            entity.Property(e => e.Registeredat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("registeredat");
+            entity.Property(e => e.Registeredat).HasColumnName("registeredat");
             entity.Property(e => e.Statusid).HasColumnName("statusid");
-            entity.Property(e => e.Updatedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("updatedat");
+            entity.Property(e => e.Updatedat).HasColumnName("updatedat");
 
             entity.HasOne(d => d.Crop).WithMany(p => p.Plantdata)
                 .HasForeignKey(d => d.Cropid)
@@ -612,6 +559,55 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.Status).WithMany(p => p.Plantdata)
                 .HasForeignKey(d => d.Statusid)
                 .HasConstraintName("plantdata_statusid_fkey");
+        });
+
+        modelBuilder.Entity<Plantobservation>(entity =>
+        {
+            entity.HasKey(e => e.Idobservation).HasName("plantobservation_pkey");
+
+            entity.ToTable("plantobservation");
+
+            entity.HasIndex(e => e.Createdat, "plantobservation_createdat");
+
+            entity.HasIndex(e => e.Createdby, "plantobservation_createdby");
+
+            entity.HasIndex(e => e.Plantid, "plantobservation_plantid");
+
+            entity.HasIndex(e => e.Statusid, "plantobservation_statusid");
+
+            entity.Property(e => e.Idobservation).HasColumnName("idobservation");
+            entity.Property(e => e.Additionalnotes).HasColumnName("additionalnotes");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
+            entity.Property(e => e.Createdby).HasColumnName("createdby");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Hasaltereduniformity).HasColumnName("hasaltereduniformity");
+            entity.Property(e => e.Hasdecolorations).HasColumnName("hasdecolorations");
+            entity.Property(e => e.Lastsensordataid).HasColumnName("lastsensordataid");
+            entity.Property(e => e.Lastthermaldataid).HasColumnName("lastthermaldataid");
+            entity.Property(e => e.Leafstemnotes).HasColumnName("leafstemnotes");
+            entity.Property(e => e.Plantid).HasColumnName("plantid");
+            entity.Property(e => e.Statusid).HasColumnName("statusid");
+            entity.Property(e => e.Subjectiverating).HasColumnName("subjectiverating");
+
+            entity.HasOne(d => d.CreatedbyNavigation).WithMany(p => p.Plantobservation)
+                .HasForeignKey(d => d.Createdby)
+                .HasConstraintName("plantobservation_createdby_fkey");
+
+            entity.HasOne(d => d.Lastsensordata).WithMany(p => p.Plantobservation)
+                .HasForeignKey(d => d.Lastsensordataid)
+                .HasConstraintName("plantobservation_lastsensordataid_fkey");
+
+            entity.HasOne(d => d.Lastthermaldata).WithMany(p => p.Plantobservation)
+                .HasForeignKey(d => d.Lastthermaldataid)
+                .HasConstraintName("plantobservation_lastthermaldataid_fkey");
+
+            entity.HasOne(d => d.Plant).WithMany(p => p.Plantobservation)
+                .HasForeignKey(d => d.Plantid)
+                .HasConstraintName("plantobservation_plantid_fkey");
+
+            entity.HasOne(d => d.Status).WithMany(p => p.Plantobservation)
+                .HasForeignKey(d => d.Statusid)
+                .HasConstraintName("plantobservation_statusid_fkey");
         });
 
         modelBuilder.Entity<Plantstatehistory>(entity =>
@@ -627,9 +623,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Statusid, "plantstatehistory_statusid");
 
             entity.Property(e => e.Idplantstatehistory).HasColumnName("idplantstatehistory");
-            entity.Property(e => e.Changedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("changedat");
+            entity.Property(e => e.Changedat).HasColumnName("changedat");
             entity.Property(e => e.Changedby).HasColumnName("changedby");
             entity.Property(e => e.Plantid).HasColumnName("plantid");
             entity.Property(e => e.Statusid).HasColumnName("statusid");
@@ -658,22 +652,16 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Session, "refreshtoken_session");
 
             entity.Property(e => e.Idrefreshtoken).HasColumnName("idrefreshtoken");
-            entity.Property(e => e.Createdat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("createdat");
+            entity.Property(e => e.Createdat).HasColumnName("createdat");
             entity.Property(e => e.Deviceinfo).HasColumnName("deviceinfo");
-            entity.Property(e => e.Expiresat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("expiresat");
+            entity.Property(e => e.Expiresat).HasColumnName("expiresat");
             entity.Property(e => e.Ipaddress)
                 .HasMaxLength(45)
                 .HasColumnName("ipaddress");
             entity.Property(e => e.Personid).HasColumnName("personid");
             entity.Property(e => e.Refreshtoken1).HasColumnName("refreshtoken");
             entity.Property(e => e.Replacedbytoken).HasColumnName("replacedbytoken");
-            entity.Property(e => e.Revokedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("revokedat");
+            entity.Property(e => e.Revokedat).HasColumnName("revokedat");
             entity.Property(e => e.Revokedbyip)
                 .HasMaxLength(45)
                 .HasColumnName("revokedbyip");
@@ -702,9 +690,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Humidity).HasColumnName("humidity");
             entity.Property(e => e.Lightintensity).HasColumnName("lightintensity");
             entity.Property(e => e.Plantid).HasColumnName("plantid");
-            entity.Property(e => e.Recordedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("recordedat");
+            entity.Property(e => e.Recordedat).HasColumnName("recordedat");
             entity.Property(e => e.Temperature).HasColumnName("temperature");
 
             entity.HasOne(d => d.Crop).WithMany(p => p.Sensordata)
@@ -758,9 +744,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Idthermaldata).HasColumnName("idthermaldata");
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Plantid).HasColumnName("plantid");
-            entity.Property(e => e.Recordedat)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("recordedat");
+            entity.Property(e => e.Recordedat).HasColumnName("recordedat");
             entity.Property(e => e.Rgbimagedata).HasColumnName("rgbimagedata");
             entity.Property(e => e.Thermalimagedata)
                 .HasColumnType("jsonb")

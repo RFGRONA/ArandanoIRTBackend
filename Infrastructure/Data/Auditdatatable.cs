@@ -13,7 +13,7 @@ public partial class Auditdatatable
 
     public int Recordid { get; set; }
 
-    public int Cropid { get; set; }
+    public int? Cropid { get; set; }
 
     public string Action { get; set; } = null!;
 

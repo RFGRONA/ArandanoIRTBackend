@@ -11,7 +11,7 @@ public partial class Auditcrop
 
     public int Recordid { get; set; }
 
-    public int Cropid { get; set; }
+    public int? Cropid { get; set; }
 
     public string Action { get; set; } = null!;
 

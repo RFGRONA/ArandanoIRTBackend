@@ -45,6 +45,8 @@ public partial class Person
 
     public virtual ICollection<Failedloginattempt> Failedloginattempt { get; set; } = new List<Failedloginattempt>();
 
+    public virtual ICollection<Plantobservation> Plantobservation { get; set; } = new List<Plantobservation>();
+
     public virtual ICollection<Plantstatehistory> Plantstatehistory { get; set; } = new List<Plantstatehistory>();
 
     public virtual ICollection<Refreshtoken> Refreshtoken { get; set; } = new List<Refreshtoken>();

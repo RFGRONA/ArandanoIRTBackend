@@ -20,4 +20,6 @@ public partial class Thermaldata
     public virtual Crop? Crop { get; set; }
 
     public virtual Plantdata? Plant { get; set; }
+
+    public virtual ICollection<Plantobservation> Plantobservation { get; set; } = new List<Plantobservation>();
 }

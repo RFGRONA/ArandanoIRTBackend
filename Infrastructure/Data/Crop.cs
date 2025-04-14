@@ -9,7 +9,7 @@ public partial class Crop
 
     public string Namecrop { get; set; } = null!;
 
-    public string Addrescrop { get; set; } = null!;
+    public string Addresscrop { get; set; } = null!;
 
     public string Cityname { get; set; } = null!;
 
