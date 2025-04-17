@@ -1,4 +1,7 @@
-﻿namespace ArandanoIRT_Backend.Application.DTOs.Auth
+﻿using ArandanoIRT_Backend.Infrastructure.Attributes;
+using System.ComponentModel.DataAnnotations;
+
+namespace ArandanoIRT_Backend.Application.DTOs.Auth
 {
     /// <summary>
     /// Represents the request data for a user login attempt.
@@ -8,11 +11,20 @@
         /// <summary>
         /// Gets or sets the user's email address.
         /// </summary>
+        [Required]
+        [EmailAddress(ErrorMessage = "Invalid email address format.")]
+        [StringLength(75, ErrorMessage = "Email address cannot exceed 75 characters.")]
+        [DataType(DataType.EmailAddress)]
+        [SanitizeHtml]
         public required string Email { get; set; }
 
         /// <summary>
         /// Gets or sets the user's password.
         /// </summary>
+        /// <example>string</example> 
+        [Required]
+        [DataType(DataType.Password)]
+        [SanitizeHtml]
         public required string Password { get; set; }
 
         /// <summary>

@@ -1,4 +1,7 @@
-﻿namespace ArandanoIRT_Backend.Application.DTOs.Auth
+﻿using ArandanoIRT_Backend.Infrastructure.Attributes;
+using System.ComponentModel.DataAnnotations;
+
+namespace ArandanoIRT_Backend.Application.DTOs.Auth
 {
     /// <summary>
     /// Represents the request data for initiating the password recovery process.
@@ -8,6 +11,11 @@
         /// <summary>
         /// Gets or sets the email address of the user requesting the password reset.
         /// </summary>
+        [Required]
+        [EmailAddress(ErrorMessage = "Invalid email address format.")]
+        [StringLength(75, ErrorMessage = "Email address cannot exceed 75 characters.")]
+        [DataType(DataType.EmailAddress)]
+        [SanitizeHtml]
         public required string Email { get; set; }
 
         /// <summary>
