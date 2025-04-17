@@ -1,40 +1,50 @@
-﻿using Ganss.Xss;
+﻿using ArandanoIRT_Backend.Application.Interfaces.Utilities;
+using Ganss.Xss;
 
 namespace ArandanoIRT_Backend.Infrastructure.Services
 {
     /// <summary>
-    /// Provides a service to sanitize input strings by removing all HTML tags,
-    /// helping to prevent Cross-Site Scripting (XSS) attacks.
-    /// Uses the Ganss.Xss.HtmlSanitizer library configured to disallow all tags.
+    /// Implements the <see cref="ISanitizerService"/> using the Ganss.Xss.HtmlSanitizer library.
+    /// This implementation is configured to remove ALL HTML tags from the input string.
     /// </summary>
-    public class SanitizerService
+    public class SanitizerService : ISanitizerService
     {
         /// <summary>
         /// The configured HtmlSanitizer instance used internally for removing HTML tags.
+        /// It's thread-safe and configured once upon instantiation.
         /// </summary>
         private readonly HtmlSanitizer _sanitizer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SanitizerService"/> class.
-        /// Creates and configures an <see cref="HtmlSanitizer"/> instance to remove all HTML tags from input strings.
+        /// Creates and configures an <see cref="HtmlSanitizer"/> instance to remove all HTML tags.
         /// </summary>
         public SanitizerService()
         {
-            // Creates a new HtmlSanitizer instance.
+            // Creates a new HtmlSanitizer instance with default options.
             _sanitizer = new HtmlSanitizer();
-            // Configures the sanitizer to remove all HTML tags by clearing the default allowed list.
+
+            // --- Configuration: Remove ALL HTML Tags ---
+            // Clears the list of allowed tags, effectively disallowing all HTML elements.
             _sanitizer.AllowedTags.Clear();
-            // Note: Additional configuration (e.g., allowed attributes on non-existent tags, CSS) could be applied here if needed.
+            // Clear allowed attributes and CSS properties as well for stricter sanitization:
+            // _sanitizer.AllowedAttributes.Clear();
+            // _sanitizer.AllowedCssProperties.Clear();
+            // --- End Configuration ---
         }
 
-        /// <summary>
-        /// Sanitizes the provided input string by removing all HTML tags according to the configured policy.
-        /// </summary>
-        /// <param name="input">The input string that may contain HTML tags.</param>
-        /// <returns>A sanitized string with all HTML tags removed. Returns the original string if input is null or already sanitized.</returns>
-        public string Sanitize(string input)
+        /// <inheritdoc/>
+        public string Sanitize(string? input)
         {
+            // Returns empty string if input is null or whitespace,
+            // as sanitizing these would yield empty string anyway.
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return input ?? string.Empty; // Return original null/whitespace or empty
+            }
+
             // Calls the Sanitize method of the configured HtmlSanitizer instance.
+            // This removes all HTML tags based on the configuration in the constructor.
             return _sanitizer.Sanitize(input);
         }
     }
