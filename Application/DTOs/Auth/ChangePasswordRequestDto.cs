@@ -13,7 +13,7 @@ namespace ArandanoIRT_Backend.Application.DTOs.Auth
         /// This code is typically sent to the user via email or another secure channel.
         /// </summary>
         [Required]
-        [StringLength(10, MinimumLength = 12, ErrorMessage = "The change code must contain between 12 and 10 characters")]
+        [StringLength(12, MinimumLength = 10, ErrorMessage = "The change code must contain between 12 and 10 characters")]
         [DataType(DataType.Text)]
         [SanitizeHtml]
         public required string ChangeCode { get; set; }

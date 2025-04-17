@@ -14,7 +14,7 @@ namespace ArandanoIRT_Backend.Application.DTOs.Auth
         /// <example>string</example> //
         [Required]
         [StringLength(80, ErrorMessage = "Name cannot exceed 80 characters.")]
-        [RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Last name can only contain letters and spaces.")]
+        [RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Name can only contain letters and spaces.")]
         [Display(Name = "Name")]
         [DataType(DataType.Text)]
         [SanitizeHtml] 
