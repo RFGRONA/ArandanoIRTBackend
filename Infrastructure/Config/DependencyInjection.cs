@@ -2,6 +2,7 @@
 using ArandanoIRT_Backend.Application.Interfaces.Services;
 using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using ArandanoIRT_Backend.Domain.IRepositories;
+using ArandanoIRT_Backend.Infrastructure.Filters;
 using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
 using ArandanoIRT_Backend.Infrastructure.Persistence.Auditing;
 using ArandanoIRT_Backend.Infrastructure.Repositories;
@@ -57,8 +58,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             services.AddScoped<IThermalDataRepository, ThermalDataRepository>();
 
             // --- Infrastructure Layer: Services & Utilities ---
-            services.AddSingleton<ICacheService, CacheService>(); 
-            services.AddSingleton<SanitizerService>(); 
+            services.AddSingleton<ICacheService, CacheService>();
+            services.AddSingleton<ISanitizerService, SanitizerService>();
+            services.AddScoped<SanitizationActionFilter>();
             services.AddScoped<CookiesService>(); 
             services.AddScoped<ICaptchaService, CloudflareTurnstileService>(); 
             services.AddScoped<ITokenService, JwtTokenService>(); 
