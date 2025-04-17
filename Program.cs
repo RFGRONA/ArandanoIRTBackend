@@ -7,6 +7,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ArandanoIRT_Backend.UI.Middleware;
+using ArandanoIRT_Backend.Infrastructure.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,11 +35,13 @@ builder.Services.ConfigureResponseCompression();
 builder.Services.ConfigureJsonOptions();
 
 builder.Services.AddHttpClient();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<SanitizationActionFilter>();
+});
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 builder.Services.ConfigureSwagger();
 builder.Services.AddOutputCache();
 
@@ -47,11 +50,14 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/ArandanoIRT/swagger.json", "ArandanoIRT API");
+    });
     app.UseReDoc(c =>
     {
         c.Path = "/redoc";
-        c.DocumentPath = "/swagger/v1/swagger.json";
+        c.DocumentPath = "/swagger/ArandanoIRT/swagger.json";
     });
 }
 app.UseHttpsRedirection();
@@ -62,15 +68,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseCors("OnlyFrontend");
+app.UseCors("AllAllowed");
 app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
-app.UseSanitization();
 app.UseResponseCompression();
 app.UseOutputCache();
 app.MapControllers();
-app.Run();
-
 app.Run();
