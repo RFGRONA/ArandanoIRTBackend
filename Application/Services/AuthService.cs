@@ -480,8 +480,8 @@ namespace ArandanoIRT_Backend.Application.Services
             string resetToken;
             try
             {
-                // Uses 16 bytes -> ~22 Base64Url chars (secure, reasonably short for copy-paste).
-                resetToken = GenerateSecureRandomString(16);
+                // Uses 8 bytes -> ~11 Base64Url chars (secure, reasonably short for copy-paste).
+                resetToken = GenerateSecureRandomString(8);
             }
             catch (Exception ex)
             {
@@ -572,8 +572,8 @@ namespace ArandanoIRT_Backend.Application.Services
             }
             var validToken = tokenResult.Value; // Stores the valid token entity.
 
-            // 3. Gets the PersonId from the validated token.
-            int personId = validToken.PersonId;
+            // Updated code to handle nullable value type
+            int personId = validToken.PersonId ?? throw new InvalidOperationException("PersonId cannot be null.");
             // No need to retrieve the full user entity if UpdatePasswordAsync only needs the ID.
 
             // Ensures PersonId from token is valid (safety check).
@@ -660,6 +660,80 @@ namespace ArandanoIRT_Backend.Application.Services
             return await _tokenService.RefreshTokensAsync(refreshTokenValue, ipAddress, userAgent, deviceInfo);
         }
 
+        /// <inheritdoc/>
+        public async Task<Result> SendHelpRequestAsync(HelpRequestDto request)
+        {
+            // 1. Validate input DTO
+            if (request == null)
+            {
+                _logger.LogWarning("SendHelpRequestAsync called with a null request object.");
+                return Result.Failure("Help request data cannot be null.");
+            }
+            // Basic validation for required fields (although DTO attributes should handle this)
+            if (string.IsNullOrWhiteSpace(request.Name) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Subject) ||
+                string.IsNullOrWhiteSpace(request.CropName) ||
+                string.IsNullOrWhiteSpace(request.Message))
+            {
+                _logger.LogWarning("SendHelpRequestAsync called with missing required fields.");
+                return Result.Failure("All fields (Name, Email, Subject, Crop Name, Message) are required.");
+            }
+
+            _logger.LogInformation("Processing help request from {RequesterEmail} regarding crop '{CropName}'.", request.Email, request.CropName);
+
+            // 2. Validate Crop Name existence
+            var cropResult = await _cropRepository.GetByNameAsync(request.CropName);
+            if (cropResult.IsFailure)
+            {
+                _logger.LogWarning("Help request failed: Crop '{CropName}' not found. Error: {Error}", request.CropName, cropResult.ErrorMessage);
+                // Return a user-friendly error, don't expose internal details like "not found".
+                return Result.Failure($"The specified crop '{request.CropName}' could not be found. Please check the name and try again.");
+            }
+            var crop = cropResult.Value;
+
+            // 3. Get the Administrator's details
+            if (!crop.AdminUserId.HasValue)
+            {
+                _logger.LogError("Help request failed: Crop '{CropName}' (ID: {CropId}) does not have an assigned administrator.", crop.NameCrop, crop.IdCrop);
+                // This indicates a data integrity issue.
+                return Result.Failure("Could not process the request because the crop does not have an assigned administrator.");
+            }
+
+            var adminResult = await _personRepository.GetById(crop.AdminUserId.Value);
+            if (adminResult.IsFailure)
+            {
+                _logger.LogError("Help request failed: Could not find administrator with ID {AdminId} for crop '{CropName}'. Error: {Error}", crop.AdminUserId.Value, crop.NameCrop, adminResult.ErrorMessage);
+                // This is also likely a data integrity issue.
+                return Result.Failure("Could not process the request due to an internal error finding the administrator.");
+            }
+            var administrator = adminResult.Value;
+
+            // 4. Generate the email body
+            string emailBody;
+            try
+            {
+                emailBody = _emailService.GenerateHelpRequestBody(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate help request email body for request from {RequesterEmail}.", request.Email);
+                return Result.Failure("Failed to prepare the help request email.");
+            }
+
+            // 5. Send the email to the administrator
+            string emailSubject = $"[Ayuda ArandanoIRT] Nueva Solicitud: {request.Subject}"; 
+            var emailResult = await _emailService.SendEmailAsync(administrator.Email, emailSubject, emailBody);
+
+            if (emailResult.IsFailure)
+            {
+                _logger.LogError("Failed to send help request email to administrator {AdminEmail} for crop '{CropName}'. Error: {Error}", administrator.Email, crop.NameCrop, emailResult.ErrorMessage);
+                return Result.Failure($"Failed to send the help request email. Please try again later or contact support directly. Error: {emailResult.ErrorMessage}");
+            }
+
+            // 6. Return success
+            return Result.Success(); 
+        }
 
         // Private Helper Methods
 

@@ -1,4 +1,5 @@
-﻿using ArandanoIRT_Backend.Domain.ValueObjects;
+﻿using ArandanoIRT_Backend.Application.DTOs.Auth; // Add this using directive
+using ArandanoIRT_Backend.Domain.ValueObjects;
 
 public interface IEmailService
 {
@@ -67,4 +68,11 @@ public interface IEmailService
     /// <param name="userName">The name of the user.</param>
     /// <returns>HTML email body string.</returns>
     string GeneratePasswordChangeConfirmationBody(string userName);
+
+    /// <summary>
+    /// Generates the email body for a help request submitted by a user.
+    /// </summary>
+    /// <param name="request">The help request data transfer object containing user details and message.</param>
+    /// <returns>HTML email body string for the help request notification.</returns>
+    string GenerateHelpRequestBody(HelpRequestDto request);
 }

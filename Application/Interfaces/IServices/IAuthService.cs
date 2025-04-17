@@ -76,5 +76,13 @@ namespace ArandanoIRT_Backend.Application.Interfaces.Services
         /// <param name="ipAddress">The IP address performing the logout.</param>
         /// <returns>A result indicating success or failure.</returns>
         Task<Result> LogoutEverywhereAsync(long sessionId, string ipAddress);
+
+        /// <summary>
+        /// Processes a help request submitted by an unauthenticated user.
+        /// Validates the associated crop name and sends an email notification to the crop's administrator.
+        /// </summary>
+        /// <param name="request">The help request data transfer object containing user details, message, and crop name.</param>
+        /// <returns>A Task representing the asynchronous operation, with a result indicating success or failure.</returns>
+        Task<Result> SendHelpRequestAsync(HelpRequestDto request);
     }
 }

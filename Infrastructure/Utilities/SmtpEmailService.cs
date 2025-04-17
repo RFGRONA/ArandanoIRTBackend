@@ -1,4 +1,5 @@
-﻿using ArandanoIRT_Backend.Application.Utilities;
+﻿using ArandanoIRT_Backend.Application.DTOs.Auth;
+using ArandanoIRT_Backend.Application.Utilities;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using Serilog;
 
@@ -8,16 +9,16 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
     /// Implements the <see cref="IEmailService"/> interface using an underlying <see cref="EmailSenderUtility"/>
     /// to send emails via SMTP. Also provides methods to generate standard email body content.
     /// </summary>
-    public class SmtpEmailService(IConfiguration configuration) : IEmailService 
+    public class SmtpEmailService(IConfiguration configuration, ILogger<SmtpEmailService> logger) : IEmailService 
     {
         /// <summary>
         /// Utility responsible for the actual SMTP sending logic.
         /// </summary>
-        private readonly EmailSenderUtility _emailSender = new EmailSenderUtility(configuration); 
+        private readonly EmailSenderUtility _emailSender = new EmailSenderUtility(configuration);
         /// <summary>
-        /// Static Serilog logger instance specific to this service.
+        /// Logger instance for logging email sending events.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<SmtpEmailService>();
+        private readonly ILogger<SmtpEmailService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <inheritdoc/>
         /// <remarks>
@@ -31,7 +32,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
             var validation = await EmailValidatorUtility.ValidateEmailAsync(to);
             if (validation.IsFailure)
             {
-                _logger.Warning("Attempted to send email to invalid address: {Email}. Error: {Error}", to, validation.ErrorMessage);
+                _logger.LogWarning("Attempted to send email to invalid address: {Email}. Error: {Error}", to, validation.ErrorMessage);
                 return Result.Failure($"Invalid recipient email address: {to}.");
             }
 
@@ -41,7 +42,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
                 // and conform to the asynchronous method signature of IEmailService.
                 // This prevents blocking the calling thread but still uses a thread pool thread for the synchronous work.
                 await Task.Run(() => _emailSender.SendEmail(to, subject, htmlBody));
-                _logger.Information("Email sent successfully to {Email} with subject {Subject}", to, subject);
+                _logger.LogInformation("Email sent successfully to {Email} with subject {Subject}", to, subject);
                 return Result.Success();
 
                 // --- Alternative if SendEmail were async ---
@@ -52,7 +53,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
             }
             catch (Exception ex) // Catches exceptions from Task.Run or SendEmail.
             {
-                _logger.Error(ex, "Failed to send email to {Email} with subject {Subject}", to, subject);
+                _logger.LogError(ex, "Failed to send email to {Email} with subject {Subject}", to, subject);
                 return Result.Failure($"Failed to send email: {ex.Message}");
             }
         }
@@ -141,6 +142,49 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
              <p>Si no realizaste este cambio, por favor contacta a soporte inmediatamente.</p>
              <p>Gracias,<br/>El Equipo de Arandano IRT</p>
              </body></html>";
+        }
+
+        /// <inheritdoc/>
+        public string GenerateHelpRequestBody(HelpRequestDto request)
+        {
+            // Validate input request
+            if (request == null)
+            {
+                // Log the error or handle it as appropriate
+                _logger.LogWarning("GenerateHelpRequestBody called with a null request object.");
+                // Return a generic error message or an empty string, depending on desired behavior
+                throw new ArgumentNullException(nameof(request), "Help request cannot be null.");
+            }
+
+            // Generate the email body in Spanish
+            return $@"
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
+                    .container {{ padding: 20px; border: 1px solid #ddd; border-radius: 5px; max-width: 600px; margin: auto; }}
+                    h2 {{ color: #333; }}
+                    strong {{ color: #555; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <h2>Nueva Solicitud de Ayuda Recibida</h2>
+                    <p>Se ha recibido una nueva solicitud de ayuda con los siguientes detalles:</p>
+                    <ul>
+                        <li><strong>Nombre:</strong> {System.Net.WebUtility.HtmlEncode(request.Name)}</li>
+                        <li><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(request.Email)}</li>
+                        <li><strong>Cultivo Relacionado:</strong> {System.Net.WebUtility.HtmlEncode(request.CropName)}</li>
+                        <li><strong>Asunto:</strong> {System.Net.WebUtility.HtmlEncode(request.Subject)}</li>
+                    </ul>
+                    <hr>
+                    <h3>Mensaje:</h3>
+                    <p>{System.Net.WebUtility.HtmlEncode(request.Message)}</p>
+                    <hr>
+                    <p><em>Por favor, contacta al usuario a través del email proporcionado para dar seguimiento.</em></p>
+                </div>
+            </body>
+            </html>";
         }
     }
 }

@@ -1,10 +1,10 @@
-﻿using ArandanoIRT_Backend.Application.Interfaces.Utilities;
+﻿using AngleSharp.Dom;
+using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using ArandanoIRT_Backend.Domain.Entities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using ArandanoIRT_Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Repositories
 {
@@ -12,7 +12,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// Implements the <see cref="ICropRepository"/> interface, providing data access logic
     /// for crop entities (<see cref="CropEntity"/>) using Entity Framework Core.
     /// </summary>
-    public class CropRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider) : ICropRepository
+    public class CropRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ILogger<CropRepository> logger) : ICropRepository
     {
         /// <summary>
         /// The database context used for data access.
@@ -23,9 +23,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// </summary>
         private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger for logging operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<CropRepository>();
+        private readonly ILogger<CropRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <summary>
         /// Maps a database context <see cref="Crop"/> entity to a domain <see cref="CropEntity"/>.
@@ -57,7 +57,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             else
             {
-                _logger.Warning("Could not set UpdatedAt property via reflection on CropEntity during mapping.");
+                _logger.LogWarning("Could not set UpdatedAt property via reflection on CropEntity during mapping.");
             }
 
             return cropEntity;
@@ -110,7 +110,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs and returns failure on error.
-                _logger.Error(ex, "Error retrieving crop by ID {Id}.", id); 
+                _logger.LogError(ex, "Error retrieving crop by ID {Id}.", id); 
                 return Result<CropEntity>.Failure("Error retrieving crop by ID.");
             }
         }
@@ -130,7 +130,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs and returns failure on error.
-                _logger.Error(ex, "Error retrieving all crops."); 
+                _logger.LogError(ex, "Error retrieving all crops."); 
                 return Result<IEnumerable<CropEntity>>.Failure("Error retrieving all crops.");
             }
         }
@@ -169,7 +169,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 }
                 else
                 {
-                    _logger.Warning("Could not set IdCrop on domain entity after creation.");
+                    _logger.LogWarning("Could not set IdCrop on domain entity after creation.");
                     // Consider returning a newly mapped entity: return Result<CropEntity>.Success(MapToDomainEntity(cropDbModel));
                 }
                 // --- End Workaround ---
@@ -179,12 +179,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error(dbEx, "Database error creating crop: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "Database error creating crop: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<CropEntity>.Failure("Database error creating crop.");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error creating crop: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error creating crop: {Error}", ex.Message); 
                 return Result<CropEntity>.Failure("Error creating crop.");
             }
         }
@@ -227,17 +227,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex) // Handles concurrency conflicts.
             {
-                _logger.Error(ex, "Concurrency conflict updating crop with ID {CropId}.", entity.IdCrop); 
+                _logger.LogError(ex, "Concurrency conflict updating crop with ID {CropId}.", entity.IdCrop); 
                 return Result<bool>.Failure("Concurrency conflict updating crop.");
             }
             catch (DbUpdateException dbEx) // Handles other database update errors.
             {
-                _logger.Error(dbEx, "Database error updating crop: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "Database error updating crop: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("Database error updating crop.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error updating crop: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error updating crop: {Error}", ex.Message); 
                 return Result<bool>.Failure("Error updating crop.");
             }
         }
@@ -265,13 +265,51 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handles database deletion errors (e.g., foreign key constraints).
             {
-                _logger.Error(dbEx, "Database error deleting crop (check related records): {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "Database error deleting crop (check related records): {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("Database error deleting crop (check related records).");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error deleting crop: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error deleting crop: {Error}", ex.Message); 
                 return Result<bool>.Failure("Error deleting crop.");
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<CropEntity>> GetByNameAsync(string name)
+        {
+            // Validate input name
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _logger.LogWarning("GetByNameAsync called with null or empty name.");
+                return Result<CropEntity>.Failure("Crop name cannot be empty.");
+            }
+
+            try
+            {
+                // Retrieve the crop entity by name, ignoring case.
+                var normalizedCropToCheck = name.ToLowerInvariant();
+                var crop = await _context.Crop
+                                       .AsNoTracking()
+                                       .FirstOrDefaultAsync(c => c.Namecrop.ToLower() == name);
+
+                // Return failure if not found.
+                if (crop == null)
+                {
+                    _logger.LogInformation("Crop with name '{CropName}' not found.", name);
+                    return Result<CropEntity>.Failure($"Crop with name '{name}' not found.");
+                }
+
+                // Map to domain entity and return success.
+                var domainEntity = MapToDomainEntity(crop);
+                _logger.LogInformation("Crop with name '{CropName}' found (ID: {CropId}).", name, crop.Idcrop);
+                return Result<CropEntity>.Success(domainEntity);
+            }
+            catch (Exception ex)
+            {
+                // Log and return failure on error.
+                _logger.LogError(ex, "Error retrieving crop by name '{CropName}'.", name);
+                return Result<CropEntity>.Failure("Error retrieving crop by name.");
             }
         }
     }

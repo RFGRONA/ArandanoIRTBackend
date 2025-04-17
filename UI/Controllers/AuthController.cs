@@ -422,6 +422,70 @@ namespace ArandanoIRT_Backend.UI.Controllers
         }
 
         /// <summary>
+        /// Envía una solicitud de ayuda al administrador del cultivo especificado.
+        /// </summary>
+        /// <remarks>
+        /// Este endpoint permite a usuarios no autenticados enviar un formulario de contacto/ayuda.
+        /// Valida que el nombre del cultivo exista y envía un correo al administrador asociado.
+        /// Puede requerir validación CAPTCHA dependiendo de la configuración del entorno.
+        /// </remarks>
+        /// <param name="request">Datos de la solicitud de ayuda (nombre, email, asunto, nombre del cultivo, mensaje, token captcha opcional).</param>
+        /// <returns>Un mensaje de confirmación si la solicitud se envió correctamente.</returns>
+        /// <response code="204">Solicitud de ayuda enviada exitosamente.</response>
+        /// <response code="400">Solicitud inválida (ej. datos faltantes, nombre de cultivo no encontrado, captcha inválido, error al enviar correo).</response>
+        [HttpPost("help-request")]
+        [AllowAnonymous] // Allows access without authentication
+        [ProducesResponseType(typeof(object), StatusCodes.Status204NoContent)] 
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SendHelpRequest([FromBody] HelpRequestDto request)
+        {
+            // Log the incoming request attempt
+            _logger.LogInformation("Received help request from email {Email} regarding crop {CropName}", request?.Email ?? "N/A", request?.CropName ?? "N/A");
+
+            // Basic null check for the request body
+            if (request == null)
+            {
+                _logger.LogWarning("Help request endpoint called with a null request body.");
+                return BadRequest("La solicitud no puede ser nula.");
+            }
+
+            // Validate CAPTCHA if needed (using the existing helper method)
+            var captchaValidationResult = await ValidateCaptchaIfNeededAsync(request.CaptchaToken);
+            if (captchaValidationResult != null)
+            {
+                // The helper method already logs the failure reason
+                return captchaValidationResult; 
+            }
+
+            // Validate the model state based on DTO attributes
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for help request from {Email}. Errors: {@ValidationErrors}", request.Email, ModelState);
+                // Return specific model validation errors
+                return BadRequest(ModelState);
+            }
+
+            // Call the application service layer to process the request
+            var result = await _authService.SendHelpRequestAsync(request);
+
+            // Check the result from the service
+            if (result.IsSuccess)
+            {
+                // Log success
+                _logger.LogInformation("Help request from {Email} for crop {CropName} processed successfully.", request.Email, request.CropName);
+                // Return 200 OK with the success message from the service
+                return NoContent(); 
+            }
+            else
+            {
+                // Log the failure reason provided by the service
+                _logger.LogWarning("Failed to process help request from {Email} for crop {CropName}. Error: {Error}", request.Email, request.CropName, result.ErrorMessage);
+                // Return 400 Bad Request with the error message from the service
+                return BadRequest(result.ErrorMessage);
+            }
+        }
+
+        /// <summary>
         /// Obtiene la clave pública RSA en formato PEM para el cifrado del lado del cliente.
         /// </summary>
         /// <returns>La cadena de la clave pública PEM.</returns>
