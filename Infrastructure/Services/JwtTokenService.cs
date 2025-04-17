@@ -5,7 +5,6 @@ using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -34,11 +33,11 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         /// <summary>
         /// Repository for accessing person (user) data.
         /// </summary>
-        private readonly IPersonRepository _personRepository; // Added based on usage in RefreshTokensAsync
+        private readonly IPersonRepository _personRepository;
         /// <summary>
-        /// Static Serilog logger instance specific to this service.
+        /// Logger instance for logging events and errors related to token operations.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<JwtTokenService>();
+        private readonly ILogger<JwtTokenService> _logger;
 
         /// <summary>
         /// The secret key used for signing and validating JWTs, read from configuration.
@@ -62,18 +61,21 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         /// <param name="refreshTokenRepository">The repository for refresh token data access.</param>
         /// <param name="dateTimeProvider">The provider for current UTC time.</param>
         /// <param name="personRepository">The repository for person data access.</param>
+        /// <param name="logger">The logger instance for logging events and errors.</param>
         /// <exception cref="ArgumentNullException">Thrown if configuration, refreshTokenRepository, dateTimeProvider, personRepository, or required JWT configuration keys are null.</exception>
         public JwtTokenService(
             IConfiguration configuration,
             IRefreshTokenRepository refreshTokenRepository,
             IDateTimeProvider dateTimeProvider,
-            IPersonRepository personRepository) // Added personRepository dependency
+            IPersonRepository personRepository,
+            ILogger<JwtTokenService> logger) 
         {
             // Injects dependencies.
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
             _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
-            _personRepository = personRepository ?? throw new ArgumentNullException(nameof(personRepository)); // Added null check
+            _personRepository = personRepository ?? throw new ArgumentNullException(nameof(personRepository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             // Reads and validates required configuration values for JWT generation/validation.
             _jwtKey = _configuration["Jwt:Key"] ?? throw new ArgumentNullException(nameof(configuration), "Configuration missing value for Jwt:Key");
@@ -82,7 +84,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             // _issuer = _configuration["Jwt:Issuer"]; // Uncomment if using issuer validation
             // _audience = _configuration["Jwt:Audience"]; // Uncomment if using audience validation
 
-            _logger.Information("JwtTokenService initialized with JWT expiry {JwtExpiry} mins, Refresh expiry {RefreshExpiry} days.", _jwtExpiryMinutes, _refreshExpiryDays);
+            _logger.LogInformation("JwtTokenService initialized with JWT expiry {JwtExpiry} mins, Refresh expiry {RefreshExpiry} days.", _jwtExpiryMinutes, _refreshExpiryDays);
         }
 
         /// <inheritdoc/>
@@ -108,7 +110,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             // Validates input person entity.
             if (person == null)
             {
-                _logger.Warning("Attempted to generate tokens for a null person entity.");
+                _logger.LogWarning("Attempted to generate tokens for a null person entity.");
                 return Result<TokenResponseDto>.Failure("Person data cannot be null for token generation."); // More specific error
             }
 
@@ -122,7 +124,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 // --- Determine Session ID ---
                 // Uses the existing session ID if provided (for refresh), otherwise generates a new one based on current ticks (for login).
                 long sessionId = existingSessionId ?? now.Ticks;
-                _logger.Debug("Using Session ID {SessionId} for token generation. Was existing provided: {ExistingProvided}",
+                _logger.LogDebug("Using Session ID {SessionId} for token generation. Was existing provided: {ExistingProvided}",
                               sessionId, existingSessionId.HasValue);
 
                 // 1. Generate the JWT Access Token using a private helper.
@@ -151,13 +153,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 var createResult = await _refreshTokenRepository.Create(refreshTokenEntity);
                 if (createResult.IsFailure)
                 {
-                    _logger.Error("Failed to store refresh token for User ID {UserId}. Error: {Error}", person.IdPerson, createResult.ErrorMessage);
+                    _logger.LogError("Failed to store refresh token for User ID {UserId}. Error: {Error}", person.IdPerson, createResult.ErrorMessage);
                     // Returns a generic error to the user.
                     return Result<TokenResponseDto>.Failure("Failed to save session information. Please try again.");
                 }
 
                 // Logs successful generation and storage, including the generated refresh token ID.
-                _logger.Information("Generated and stored tokens for User ID {UserId}. Session ID: {SessionId}, Refresh Token ID: {RefreshTokenId}",
+                _logger.LogInformation("Generated and stored tokens for User ID {UserId}. Session ID: {SessionId}, Refresh Token ID: {RefreshTokenId}",
                                     person.IdPerson, sessionId, createResult.Value.IdRefreshToken); // Uses ID from the result after creation.
 
                 // 5. Creates and returns the DTO containing the new tokens and access token expiry.
@@ -170,7 +172,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             }
             catch (Exception ex) // Catches any unexpected errors during the process.
             {
-                _logger.Error(ex, "Error generating tokens for User ID {UserId}", person?.IdPerson);
+                _logger.LogError(ex, "Error generating tokens for User ID {UserId}", person?.IdPerson);
                 return Result<TokenResponseDto>.Failure($"An unexpected error occurred while generating tokens.");
             }
         }
@@ -190,7 +192,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 var tokenResult = await _refreshTokenRepository.GetByTokenAsync(refreshTokenValue);
                 if (tokenResult.IsFailure)
                 {
-                    _logger.Warning("GetSessionIdFromTokenAsync: Refresh token not found in repository. Error: {Error}", tokenResult.ErrorMessage);
+                    _logger.LogWarning("GetSessionIdFromTokenAsync: Refresh token not found in repository. Error: {Error}", tokenResult.ErrorMessage);
                     // Returns a specific internal error message.
                     return Result<long>.Failure("Refresh token not found.");
                 }
@@ -200,17 +202,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 // Checks if the retrieved token is inactive (revoked or expired).
                 if (tokenEntity.RevokedAt != null || tokenEntity.ExpiresAt <= _dateTimeProvider.GetUtcNow())
                 {
-                    _logger.Warning("GetSessionIdFromTokenAsync: Token {TokenId} is inactive (revoked or expired).", tokenEntity.IdRefreshToken);
+                    _logger.LogWarning("GetSessionIdFromTokenAsync: Token {TokenId} is inactive (revoked or expired).", tokenEntity.IdRefreshToken);
                     return Result<long>.Failure("Token is inactive.");
                 }
 
                 // Returns the session ID associated with the valid, active token.
-                _logger.Debug("GetSessionIdFromTokenAsync: Found Session ID {SessionId} for token ID {TokenId}", tokenEntity.Session, tokenEntity.IdRefreshToken);
+                _logger.LogDebug("GetSessionIdFromTokenAsync: Found Session ID {SessionId} for token ID {TokenId}", tokenEntity.Session, tokenEntity.IdRefreshToken);
                 return Result<long>.Success(tokenEntity.Session);
             }
             catch (Exception ex) // Handles unexpected errors during retrieval or validation.
             {
-                _logger.Error(ex, "Error retrieving session ID from refresh token.");
+                _logger.LogError(ex, "Error retrieving session ID from refresh token.");
                 return Result<long>.Failure($"An unexpected error occurred while retrieving session info.");
             }
         }
@@ -226,7 +228,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             var dbTokenResult = await _refreshTokenRepository.GetByTokenAsync(refreshTokenValue);
             if (dbTokenResult.IsFailure)
             {
-                _logger.Warning("Refresh token not found in database during refresh attempt. Provided token snippet: {TokenSnippet}", refreshTokenValue.Length > 10 ? refreshTokenValue.Substring(0, 10) : refreshTokenValue);
+                _logger.LogWarning("Refresh token not found in database during refresh attempt. Provided token snippet: {TokenSnippet}", refreshTokenValue.Length > 10 ? refreshTokenValue.Substring(0, 10) : refreshTokenValue);
                 // Returns a generic error to prevent token probing.
                 return Result<TokenResponseDto>.Failure("Invalid session or token.");
             }
@@ -237,20 +239,20 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             // 2. Validates the status of the existing token.
             if (dbToken.RevokedAt != null)
             {
-                _logger.Warning("Attempted refresh using a revoked token. User ID: {UserId}, Token ID: {TokenId}, Session: {SessionId}", dbToken.PersonId ?? -1, dbToken.IdRefreshToken, dbToken.Session);
+                _logger.LogWarning("Attempted refresh using a revoked token. User ID: {UserId}, Token ID: {TokenId}, Session: {SessionId}", dbToken.PersonId ?? -1, dbToken.IdRefreshToken, dbToken.Session);
                 // Security: Consider implementing logic here to revoke all other tokens in the same session (dbToken.Session).
                 return Result<TokenResponseDto>.Failure("Session has been invalidated. Please log in again.");
             }
             if (dbToken.ExpiresAt <= now)
             {
-                _logger.Information("Attempted refresh using an expired token. User ID: {UserId}, Token ID: {TokenId}, Session: {SessionId}", dbToken.PersonId ?? -1, dbToken.IdRefreshToken, dbToken.Session);
+                _logger.LogInformation("Attempted refresh using an expired token. User ID: {UserId}, Token ID: {TokenId}, Session: {SessionId}", dbToken.PersonId ?? -1, dbToken.IdRefreshToken, dbToken.Session);
                 // Optionally delete the expired token here? For now, just fail.
                 return Result<TokenResponseDto>.Failure("Session has expired. Please log in again.");
             }
             // Ensures the token is linked to a person (critical for generating new tokens).
             if (!dbToken.PersonId.HasValue)
             {
-                _logger.Error("Critical state: Refresh token {TokenId} (Session: {SessionId}) found without a PersonId.", dbToken.IdRefreshToken, dbToken.Session);
+                _logger.LogError("Critical state: Refresh token {TokenId} (Session: {SessionId}) found without a PersonId.", dbToken.IdRefreshToken, dbToken.Session);
                 // This indicates a data integrity issue.
                 return Result<TokenResponseDto>.Failure("Invalid token state. Please contact support.");
             }
@@ -259,7 +261,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             var personResult = await _personRepository.GetById(dbToken.PersonId.Value);
             if (personResult.IsFailure)
             {
-                _logger.Error("User account (ID: {PersonId}) linked to refresh token {TokenId} (Session: {SessionId}) not found.", dbToken.PersonId.Value, dbToken.IdRefreshToken, dbToken.Session);
+                _logger.LogError("User account (ID: {PersonId}) linked to refresh token {TokenId} (Session: {SessionId}) not found.", dbToken.PersonId.Value, dbToken.IdRefreshToken, dbToken.Session);
                 // If user doesn't exist, the refresh token is invalid. Revoke it.
                 await RevokeRefreshTokenAsync(refreshTokenValue, ipAddress);
                 return Result<TokenResponseDto>.Failure("Associated user account not found.");
@@ -272,7 +274,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
 
             if (newTokenResult.IsFailure)
             {
-                _logger.Error("Failed to generate new tokens during refresh for User ID {UserId}, Session ID {SessionId}. Error: {Error}", person.IdPerson, dbToken.Session, newTokenResult.ErrorMessage);
+                _logger.LogError("Failed to generate new tokens during refresh for User ID {UserId}, Session ID {SessionId}. Error: {Error}", person.IdPerson, dbToken.Session, newTokenResult.ErrorMessage);
                 // Fails definitively if new token generation fails. Does not revoke old token yet.
                 return Result<TokenResponseDto>.Failure("Failed to generate new tokens. Please try again or log in.");
             }
@@ -287,14 +289,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             {
                 // This is problematic: User received new tokens, but the old token wasn't properly revoked/updated.
                 // This could potentially allow replay if not handled carefully. Logs a critical error.
-                _logger.Error("CRITICAL: Failed to update (revoke/replace) old refresh token {TokenId} (Session: {SessionId}) after issuing new tokens for User ID {UserId}. Error: {Error}",
+                _logger.LogError("CRITICAL: Failed to update (revoke/replace) old refresh token {TokenId} (Session: {SessionId}) after issuing new tokens for User ID {UserId}. Error: {Error}",
                               dbToken.IdRefreshToken, dbToken.Session, person.IdPerson, updateResult.ErrorMessage);
                 // Proceeds with success as the user has valid new tokens, but logs the inconsistency. Manual cleanup might be needed.
             }
             else
             {
                 // Logs successful rotation.
-                _logger.Information("Successfully refreshed tokens for User ID {UserId}. Old token {OldTokenId} (Session: {SessionId}) revoked, replaced by new token.",
+                _logger.LogInformation("Successfully refreshed tokens for User ID {UserId}. Old token {OldTokenId} (Session: {SessionId}) revoked, replaced by new token.",
                                     person.IdPerson, dbToken.IdRefreshToken, dbToken.Session);
             }
 
@@ -315,7 +317,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             if (dbTokenResult.IsFailure)
             {
                 // If token not found, it's effectively invalid/revoked. Log and return success.
-                _logger.Information("Attempted to revoke a refresh token that was not found. Token snippet: {TokenSnippet}", refreshTokenValue.Length > 10 ? refreshTokenValue.Substring(0, 10) : refreshTokenValue);
+                _logger.LogInformation("Attempted to revoke a refresh token that was not found. Token snippet: {TokenSnippet}", refreshTokenValue.Length > 10 ? refreshTokenValue.Substring(0, 10) : refreshTokenValue);
                 return Result.Success();
             }
 
@@ -325,12 +327,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             // 2. Checks if token is already inactive.
             if (dbToken.RevokedAt != null)
             {
-                _logger.Information("Refresh token {TokenId} (Session: {SessionId}) was already revoked at {RevokedAt}.", dbToken.IdRefreshToken, dbToken.Session, dbToken.RevokedAt);
+                _logger.LogInformation("Refresh token {TokenId} (Session: {SessionId}) was already revoked at {RevokedAt}.", dbToken.IdRefreshToken, dbToken.Session, dbToken.RevokedAt);
                 return Result.Success(); // Already revoked.
             }
             if (dbToken.ExpiresAt <= now)
             {
-                _logger.Information("Refresh token {TokenId} (Session: {SessionId}) is already expired ({ExpiresAt}).", dbToken.IdRefreshToken, dbToken.Session, dbToken.ExpiresAt);
+                _logger.LogInformation("Refresh token {TokenId} (Session: {SessionId}) is already expired ({ExpiresAt}).", dbToken.IdRefreshToken, dbToken.Session, dbToken.ExpiresAt);
                 return Result.Success(); // Already expired.
             }
 
@@ -342,13 +344,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             var updateResult = await _refreshTokenRepository.Update(dbToken);
             if (updateResult.IsSuccess)
             {
-                _logger.Information("Successfully revoked refresh token {TokenId} (Session: {SessionId}) for User ID {UserId}", dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1);
+                _logger.LogInformation("Successfully revoked refresh token {TokenId} (Session: {SessionId}) for User ID {UserId}", dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1);
                 return Result.Success();
             }
             else
             {
                 // Logs failure to update the revoked status.
-                _logger.Error("Failed to update (revoke) refresh token {TokenId} (Session: {SessionId}) for User ID {UserId}. Error: {Error}", dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1, updateResult.ErrorMessage);
+                _logger.LogError("Failed to update (revoke) refresh token {TokenId} (Session: {SessionId}) for User ID {UserId}. Error: {Error}", dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1, updateResult.ErrorMessage);
                 return Result.Failure("Failed to revoke refresh token due to a database error.");
             }
         }
@@ -380,7 +382,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 if (securityToken is not JwtSecurityToken jwtSecurityToken ||
                     !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    _logger.Warning("Invalid token structure or algorithm encountered when getting principal from expired token. Algorithm: {Alg}", (securityToken as JwtSecurityToken)?.Header?.Alg);
+                    _logger.LogWarning("Invalid token structure or algorithm encountered when getting principal from expired token. Algorithm: {Alg}", (securityToken as JwtSecurityToken)?.Header?.Alg);
                     return null; // Returns null if algorithm is unexpected.
                 }
                 // Returns the principal containing claims if signature and structure are valid.
@@ -389,13 +391,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             catch (SecurityTokenValidationException stve) // Catches validation errors OTHER than lifetime.
             {
                 // Logs validation errors like invalid signature.
-                _logger.Warning("SecurityTokenValidationException while getting principal from token (expected if signature invalid): {Message}", stve.Message);
+                _logger.LogWarning("SecurityTokenValidationException while getting principal from token (expected if signature invalid): {Message}", stve.Message);
                 // Since ValidateLifetime is false, this shouldn't be a lifetime error. Return null for other validation failures.
                 return null;
             }
             catch (Exception ex) // Catches unexpected errors.
             {
-                _logger.Error(ex, "Unexpected exception while trying to get principal from (potentially expired) token.");
+                _logger.LogError(ex, "Unexpected exception while trying to get principal from (potentially expired) token.");
                 return null;
             }
         }

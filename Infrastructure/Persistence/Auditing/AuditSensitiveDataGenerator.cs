@@ -2,7 +2,6 @@
 using ArandanoIRT_Backend.Infrastructure.Data; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
 {
@@ -12,13 +11,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
     /// like tokens, passwords, invitations, and activations.
     /// This generator focuses on logging the action itself, not the old/new values.
     /// </summary>
-    public class AuditSensitiveDataGenerator : IAuditEntryGenerator
+    public class AuditSensitiveDataGenerator (ILogger<AuditSensitiveDataGenerator> logger) : IAuditEntryGenerator
     {
-        // Static logger instance specific to this generator.
-        private readonly Serilog.ILogger _logger = Log.ForContext<AuditSensitiveDataGenerator>();
-
-        // Note: This generator does not inject IAuditHelperService or ILogger via constructor,
-        // relying on local helper methods and a static logger instance.
+        /// <summary>
+        /// Logger instance for logging audit generation events.
+        /// </summary>
+        private readonly ILogger<AuditSensitiveDataGenerator> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <inheritdoc/>
         /// <remarks>
@@ -53,7 +51,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                 entry.Entity is not Cropinvitation &&
                 entry.Entity is not Deviceactivation)
             {
-                _logger.Warning("AuditSensitiveDataGenerator potentially called with unexpected type (check logic): {EntityType}", entry.Entity.GetType().Name);
+                _logger.LogWarning("AuditSensitiveDataGenerator potentially called with unexpected type (check logic): {EntityType}", entry.Entity.GetType().Name);
                 return Enumerable.Empty<object>(); // Returns an empty collection.
             }
 
@@ -78,7 +76,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             audit.Cropid = GetCropIdValue(entry); // Will be null if CropId property doesn't exist on the entity.
 
             // Logs the generation attempt.
-            _logger.Information("Generating AuditSensitiveData for {TableName} ID: {RecordId}, Action: {Action}",
+            _logger.LogInformation("Generating AuditSensitiveData for {TableName} ID: {RecordId}, Action: {Action}",
                                 audit.Tablename, audit.Recordid, audit.Action);
 
             // OldValue and NewValue are intentionally not set for sensitive data audits.
@@ -112,12 +110,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                     if (pkValue is int intValueDeleted) return intValueDeleted;
                 }
 
-                _logger.Warning("Could not get PK of type INT for {TableName}. PK Name: {PKName}, PK Type: {PKType}",
+                _logger.LogWarning("Could not get PK of type INT for {TableName}. PK Name: {PKName}, PK Type: {PKType}",
                                 entry.Metadata.GetTableName() ?? "<Unknown>", pkProperty.Name, pkValue?.GetType().Name ?? "null");
             }
             else // Handles null or composite PK
             {
-                _logger.Warning("Could not determine unique PK for {TableName}.", entry.Metadata.GetTableName() ?? "<Unknown>");
+                _logger.LogWarning("Could not determine unique PK for {TableName}.", entry.Metadata.GetTableName() ?? "<Unknown>");
             }
 
             // If RecordId in the audit table can be 0 for error/INSERT cases, return 0.

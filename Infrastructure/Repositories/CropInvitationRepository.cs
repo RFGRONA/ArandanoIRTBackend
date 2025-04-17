@@ -4,7 +4,6 @@ using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using ArandanoIRT_Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Repositories
 {
@@ -13,15 +12,15 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// for crop invitation entities (<see cref="CropInvitationEntity"/>) using Entity Framework Core.
     /// Includes lazy initialization for status IDs required by repository operations.
     /// </summary>
-    public class CropInvitationRepository(ApplicationDbContext context, IStatusRepository statusRepository, IDateTimeProvider dateTimeProvider) : ICropInvitationRepository
+    public class CropInvitationRepository(ApplicationDbContext context, IStatusRepository statusRepository, IDateTimeProvider dateTimeProvider, ILogger<CropInvitationRepository> logger) : ICropInvitationRepository
     {
         private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
         private readonly IStatusRepository _statusRepository = statusRepository ?? throw new ArgumentNullException(nameof(statusRepository));
         private readonly IDateTimeProvider _datetime = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger instance for logging repository operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<CropInvitationRepository>();
+        private readonly ILogger<CropInvitationRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // Status IDs - initialized lazily using InitializeStatusIdsAsync.
         /// <summary>ID for the 'Pending' status.</summary>
@@ -58,7 +57,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             // Checks if initialization was successful and required IDs are set.
             if (!_statusesInitialized || _usedStatusId == 0 || _pendingStatusId == 0) // Need pending to check current state
             {
-                _logger.Error("Cannot mark invitation as used: Repository statuses not initialized correctly (UsedStatusId={UsedStatusId}, PendingStatusId={PendingStatusId}).", _usedStatusId, _pendingStatusId);
+                _logger.LogError("Cannot mark invitation as used: Repository statuses not initialized correctly (UsedStatusId={UsedStatusId}, PendingStatusId={PendingStatusId}).", _usedStatusId, _pendingStatusId);
                 return Result<bool>.Failure("Repository status initialization failed.");
             }
 
@@ -83,7 +82,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Checks if the invitation is currently in the 'Pending' state.
                 if (invitation.Statusid != _pendingStatusId)
                 {
-                    _logger.Warning("Attempted to mark invitation {InvitationId} as used, but its current status ID is {StatusId} (Expected: {PendingStatusId})",
+                    _logger.LogWarning("Attempted to mark invitation {InvitationId} as used, but its current status ID is {StatusId} (Expected: {PendingStatusId})",
                                     invitationId, invitation.Statusid, _pendingStatusId);
                     // Fails if the invitation is not in the correct state to be marked as used.
                     return Result<bool>.Failure("Invitation is not in a valid state to be marked as used.");
@@ -91,13 +90,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Checks if the invitation has expired.
                 if (invitation.Expiresat <= _datetime.GetUtcNow()) // Uses timestamp for comparison.
                 {
-                    _logger.Warning("Attempted to mark invitation {InvitationId} as used, but it has expired ({ExpiryDate}).", invitationId, invitation.Expiresat);
+                    _logger.LogWarning("Attempted to mark invitation {InvitationId} as used, but it has expired ({ExpiryDate}).", invitationId, invitation.Expiresat);
                     return Result<bool>.Failure("Invitation has expired.");
                 }
                 // Checks if the invitation has already been used.
                 if (invitation.Usedby != null)
                 {
-                    _logger.Warning("Attempted to mark invitation {InvitationId} as used, but it was already used by User ID {UsedById}.", invitationId, invitation.Usedby);
+                    _logger.LogWarning("Attempted to mark invitation {InvitationId} as used, but it was already used by User ID {UsedById}.", invitationId, invitation.Usedby);
                     return Result<bool>.Failure("Invitation has already been used.");
                 }
                 // --- End validation checks ---
@@ -113,24 +112,24 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Checks if the update was successful.
                 if (rowsAffected > 0)
                 {
-                    _logger.Information("Successfully marked invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
+                    _logger.LogInformation("Successfully marked invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
                     return Result<bool>.Success(true);
                 }
                 else
                 {
                     // Logs a warning if no rows were affected (e.g., concurrency issue).
-                    _logger.Warning("No rows affected when marking invitation {InvitationId} as used for User ID {UserId}.", invitationId, userId);
+                    _logger.LogWarning("No rows affected when marking invitation {InvitationId} as used for User ID {UserId}.", invitationId, userId);
                     return Result<bool>.Failure("Failed to update invitation status, possibly due to a concurrency issue.");
                 }
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error(dbEx, "Database error marking invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
+                _logger.LogError(dbEx, "Database error marking invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
                 return Result<bool>.Failure("Database error marking invitation as use.");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error marking invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
+                _logger.LogError(ex, "Error marking invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
                 return Result<bool>.Failure("Error marking invitation as used.");
             }
         }
@@ -152,13 +151,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Second check inside the lock to handle race condition.
                 if (_statusesInitialized) return;
 
-                _logger.Information("Initializing CropInvitation status IDs...");
+                _logger.LogInformation("Initializing CropInvitation status IDs...");
                 // Retrieves statuses related to the 'cropinvitation' table.
                 var statusResult = await _statusRepository.GetStatusesByTableNameAsync(TABLE_NAME);
                 // Checks if retrieval failed or returned no results.
                 if (statusResult.IsFailure || !statusResult.Value.Any())
                 {
-                    _logger.Error("Failed to retrieve required statuses for table '{TableName}'. Error: {ErrorMessage}",
+                    _logger.LogError("Failed to retrieve required statuses for table '{TableName}'. Error: {ErrorMessage}",
                                     TABLE_NAME, statusResult.ErrorMessage ?? "No statuses found.");
                     // Throws if initialization fails, as repository cannot function correctly without status IDs.
                     throw new InvalidOperationException($"Could not initialize required statuses for {TABLE_NAME}. Repository cannot function correctly.");
@@ -179,14 +178,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Validates that all required status IDs were found and assigned.
                 if (_pendingStatusId == 0 || _usedStatusId == 0 || _expiredStatusId == 0 || _revokedStatusId == 0)
                 {
-                    _logger.Warning("One or more required statuses ('{Pending}', '{Used}', '{Expired}', '{Revoked}') were not found for table '{TableName}'.",
+                    _logger.LogWarning("One or more required statuses ('{Pending}', '{Used}', '{Expired}', '{Revoked}') were not found for table '{TableName}'.",
                                     PENDING_STATUS_NAME, USED_STATUS_NAME, EXPIRED_STATUS_NAME, REVOKED_STATUS_NAME, TABLE_NAME); // Updated Expired/Revoked names
                     throw new InvalidOperationException($"Missing required status definitions for {TABLE_NAME}.");
                 }
                 else
                 {
                     // Logs successful initialization.
-                    _logger.Information("Successfully initialized CropInvitation statuses: Pending={PendingId}, Used={UsedId}, Expired={ExpiredId}, Revoked={RevokedId}",
+                    _logger.LogInformation("Successfully initialized CropInvitation statuses: Pending={PendingId}, Used={UsedId}, Expired={ExpiredId}, Revoked={RevokedId}",
                                        _pendingStatusId, _usedStatusId, _expiredStatusId, _revokedStatusId);
                     // Sets the flag indicating successful initialization.
                     _statusesInitialized = true;
@@ -194,7 +193,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex) // Catches any unexpected error during initialization.
             {
-                _logger.Fatal(ex, "Fatal error during CropInvitation status initialization.");
+                _logger.LogError(ex, "Fatal error during CropInvitation status initialization.");
                 throw; // Re-throws to indicate critical failure.
             }
             finally
@@ -282,7 +281,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving active invitation by code: {AccessCode}", accessCode);
+                _logger.LogError(ex, "Error retrieving active invitation by code: {AccessCode}", accessCode);
                 return Result<CropInvitationEntity>.Failure("Error retrieving invitation by code.");
             }
         }
@@ -303,7 +302,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving invitation by ID: {InvitationId}", id);
+                _logger.LogError(ex, "Error retrieving invitation by ID: {InvitationId}", id);
                 return Result<CropInvitationEntity>.Failure("Error retrieving invitation.");
             }
         }
@@ -320,7 +319,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving all invitations");
+                _logger.LogError(ex, "Error retrieving all invitations");
                 return Result<IEnumerable<CropInvitationEntity>>.Failure("Error retrieving all invitations.");
             }
         }
@@ -359,7 +358,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 }
                 else
                 {
-                    _logger.Warning("Could not set IdCropInvitation on domain entity after creation.");
+                    _logger.LogWarning("Could not set IdCropInvitation on domain entity after creation.");
                     // Alternative: Return a newly mapped entity instead.
                     // return Result<CropInvitationEntity>.Success(MapToDomainEntity(dbModel));
                 }
@@ -371,13 +370,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx)
             {
                 // Logs DB errors with structured entity data for context.
-                _logger.Error(dbEx, "DB error creating invitation. Entity: {@InvitationEntity}", entity);
+                _logger.LogError(dbEx, "DB error creating invitation. Entity: {@InvitationEntity}", entity);
                 return Result<CropInvitationEntity>.Failure("DB error creating invitation.");
             }
             catch (Exception ex)
             {
                 // Logs general errors with structured entity data.
-                _logger.Error(ex, "Error creating invitation. Entity: {@InvitationEntity}", entity);
+                _logger.LogError(ex, "Error creating invitation. Entity: {@InvitationEntity}", entity);
                 return Result<CropInvitationEntity>.Failure("Error creating invitation.");
             }
         }
@@ -404,24 +403,24 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // Logs a warning if no rows were affected (potentially unchanged data or concurrency).
                 if (rows == 0)
-                    _logger.Warning("No changes saved for invitation ID: {InvitationId}. Entity: {@InvitationEntity}", entity.IdCropInvitation, entity);
+                    _logger.LogWarning("No changes saved for invitation ID: {InvitationId}. Entity: {@InvitationEntity}", entity.IdCropInvitation, entity);
 
                 // Returns success if rows were affected.
                 return Result<bool>.Success(rows > 0);
             }
             catch (DbUpdateConcurrencyException ex) // Specific handling for concurrency issues.
             {
-                _logger.Warning(ex, "Concurrency error updating invitation ID {InvitationId}", entity.IdCropInvitation);
+                _logger.LogWarning(ex, "Concurrency error updating invitation ID {InvitationId}", entity.IdCropInvitation);
                 return Result<bool>.Failure("Concurrency error updating invitation.");
             }
             catch (DbUpdateException dbEx) // Specific handling for other DB update issues.
             {
-                _logger.Error(dbEx, "DB error updating invitation ID: {InvitationId}. Entity: {@InvitationEntity}", entity.IdCropInvitation, entity);
+                _logger.LogError(dbEx, "DB error updating invitation ID: {InvitationId}. Entity: {@InvitationEntity}", entity.IdCropInvitation, entity);
                 return Result<bool>.Failure("DB error updating invitation.");
             }
             catch (Exception ex) // General error handler.
             {
-                _logger.Error(ex, "Error updating invitation ID: {InvitationId}. Entity: {@InvitationEntity}", entity.IdCropInvitation, entity);
+                _logger.LogError(ex, "Error updating invitation ID: {InvitationId}. Entity: {@InvitationEntity}", entity.IdCropInvitation, entity);
                 return Result<bool>.Failure("Error updating invitation.");
             }
         }
@@ -443,19 +442,19 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // Logs a warning if no rows were affected.
                 if (rows == 0)
-                    _logger.Warning("Failed to delete invitation ID (no rows affected): {InvitationId}", id);
+                    _logger.LogWarning("Failed to delete invitation ID (no rows affected): {InvitationId}", id);
 
                 // Returns success if rows were affected.
                 return Result<bool>.Success(rows > 0);
             }
             catch (DbUpdateException dbEx) // Handles DB deletion errors.
             {
-                _logger.Error(dbEx, "DB error deleting invitation ID: {InvitationId}", id);
+                _logger.LogError(dbEx, "DB error deleting invitation ID: {InvitationId}", id);
                 return Result<bool>.Failure("DB error deleting invitation.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error deleting invitation ID: {InvitationId}", id);
+                _logger.LogError(ex, "Error deleting invitation ID: {InvitationId}", id);
                 return Result<bool>.Failure("Error deleting invitation.");
             }
         }

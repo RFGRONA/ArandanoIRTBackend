@@ -4,7 +4,6 @@ using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using ArandanoIRT_Backend.Infrastructure.Data; 
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Repositories
 {
@@ -12,7 +11,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// Implements the <see cref="IPersonRepository"/> interface, providing data access logic
     /// for person (user) entities (<see cref="PersonEntity"/>) using Entity Framework Core.
     /// </summary>
-    public class PersonRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider) : IPersonRepository
+    public class PersonRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ILogger<PersonRepository> logger) : IPersonRepository
     {
         /// <summary>
         /// The database context used for data access.
@@ -23,9 +22,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// </summary>
         private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger instance for logging repository operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<PersonRepository>();
+        private readonly ILogger<PersonRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <summary>
         /// Maps a database context <see cref="Person"/> entity to a domain <see cref="PersonEntity"/>.
@@ -143,17 +142,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex) // Handle concurrency conflicts.
             {
-                _logger.Error(ex, "Concurrency conflict updating password for person with ID {IdPerson}.", personId); 
+                _logger.LogError(ex, "Concurrency conflict updating password for person with ID {IdPerson}.", personId); 
                 return Result<bool>.Failure("Concurrency conflict updating password for person.");
             }
             catch (DbUpdateException dbEx) // Handle other DB update errors.
             {
-                _logger.Error(dbEx, "Database error updating password for person {IdPerson}: {Message}", personId, dbEx.InnerException?.Message ?? dbEx.Message);
+                _logger.LogError(dbEx, "Database error updating password for person {IdPerson}: {Message}", personId, dbEx.InnerException?.Message ?? dbEx.Message);
                 return Result<bool>.Failure("Database error updating password.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error(ex, "Error updating password for person {IdPerson}: {Message}", personId, ex.Message);
+                _logger.LogError(ex, "Error updating password for person {IdPerson}: {Message}", personId, ex.Message);
                 return Result<bool>.Failure("Error updating password.");
             }
         }
@@ -177,7 +176,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving person by ID: {IdPerson}", id); 
+                _logger.LogError(ex, "Error retrieving person by ID: {IdPerson}", id); 
                 return Result<PersonEntity>.Failure("Error retrieving person by ID.");
             }
         }
@@ -203,7 +202,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Checks if mapping was successful before attempting to set password.
                 if (domainEntity == null)
                 {
-                    _logger.Error("Error mapping Person entity after retrieving it via email {Email}", email);
+                    _logger.LogError("Error mapping Person entity after retrieving it via email {Email}", email);
                     return Result<PersonEntity>.Failure("Internal error processing user data.");
                 }
 
@@ -212,7 +211,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving person by email: {Message}", ex.Message);
+                _logger.LogError(ex, "Error retrieving person by email: {Message}", ex.Message);
                 return Result<PersonEntity>.Failure("Error retrieving person by email.");
             }
         }
@@ -232,7 +231,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving all people: {Message}", ex.Message);
+                _logger.LogError(ex, "Error retrieving all people: {Message}", ex.Message);
                 return Result<IEnumerable<PersonEntity>>.Failure("Error retrieving all people.");
             }
         }
@@ -280,7 +279,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 }
                 else
                 {
-                    _logger.Warning("Could not set IdPerson on domain entity after creation.");
+                    _logger.LogWarning("Could not set IdPerson on domain entity after creation.");
                 }
                 // --- End Workaround ---
 
@@ -289,12 +288,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error(dbEx, "Database error creating person: {Message}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "Database error creating person: {Message}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<PersonEntity>.Failure("Database error creating person.");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error creating person: {Message}", ex.Message);
+                _logger.LogError(ex, "Error creating person: {Message}", ex.Message);
                 return Result<PersonEntity>.Failure("Error creating person.");
             }
         }
@@ -348,17 +347,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex) // Handle concurrency conflicts.
             {
-                _logger.Error(ex, "Concurrency conflict updating person with ID {IdPerson}. The record may have been modified or deleted.", entity.IdPerson); 
+                _logger.LogError(ex, "Concurrency conflict updating person with ID {IdPerson}. The record may have been modified or deleted.", entity.IdPerson); 
                 return Result<bool>.Failure("Concurrency conflict updating person. The record may have been modified or deleted.");
             }
             catch (DbUpdateException dbEx) // Handle other DB update errors.
             {
-                _logger.Error(dbEx, "Database error updating person: {Message}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "Database error updating person: {Message}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("Database error updating person.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error(ex, "Error updating person: {Message}", ex.Message);
+                _logger.LogError(ex, "Error updating person: {Message}", ex.Message);
                 return Result<bool>.Failure("Error updating person.");
             }
         }
@@ -385,12 +384,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handle DB errors (e.g., FK constraints).
             {
-                _logger.Error(dbEx, "Database error deleting person (check for related records): {Message}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "Database error deleting person (check for related records): {Message}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("Database error deleting person (check for related records).");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error(ex, "Error deleting person: {Message}", ex.Message);
+                _logger.LogError(ex, "Error deleting person: {Message}", ex.Message);
                 return Result<bool>.Failure("Error deleting person.");
             }
         }

@@ -4,7 +4,6 @@ using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using ArandanoIRT_Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Repositories
 {
@@ -12,14 +11,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// Implements the <see cref="IChangePasswordRepository"/> interface, providing data access logic
     /// for password reset token entities (<see cref="ChangePasswordEntity"/>) using Entity Framework Core.
     /// </summary>
-    public class ChangePasswordRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider) : IChangePasswordRepository
+    public class ChangePasswordRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ILogger<ChangePasswordRepository> logger) : IChangePasswordRepository
     {
         private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
         private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger instance for logging repository operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<ChangePasswordRepository>();
+        private readonly ILogger<ChangePasswordRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <summary>
         /// Maps a database context <see cref="Changepassword"/> entity to a domain <see cref="ChangePasswordEntity"/>.
@@ -87,7 +86,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs any unexpected error during retrieval.
-                _logger.Error(ex, $"Error retrieving reset token by token value: {ex.Message}");
+                _logger.LogError(ex, $"Error retrieving reset token by token value: {ex.Message}");
                 return Result<ChangePasswordEntity>.Failure("Error retrieving reset token.");
             }
         }
@@ -119,13 +118,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx)
             {
                 // Logs database-specific update errors.
-                _logger.Error(dbEx, $"Database error deleting reset tokens for PersonId {personId}, {dbEx.InnerException?.Message ?? dbEx.Message}.");
+                _logger.LogError(dbEx, $"Database error deleting reset tokens for PersonId {personId}, {dbEx.InnerException?.Message ?? dbEx.Message}.");
                 return Result<bool>.Failure($"Database error deleting reset tokens.");
             }
             catch (Exception ex)
             {
                 // Logs general errors during the deletion process.
-                _logger.Error(ex, $"Error deleting reset tokens for PersonId {personId}: {ex.Message}");
+                _logger.LogError(ex, $"Error deleting reset tokens for PersonId {personId}: {ex.Message}");
                 return Result<bool>.Failure($"Error deleting reset tokens for person.");
             }
         }
@@ -145,7 +144,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs errors during retrieval.
-                _logger.Error(ex, $"Error retrieving reset token by ID {id}: {ex.Message}"); 
+                _logger.LogError(ex, $"Error retrieving reset token by ID {id}: {ex.Message}"); 
                 return Result<ChangePasswordEntity>.Failure($"Error retrieving reset token.");
             }
         }
@@ -163,7 +162,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs errors during retrieval.
-                _logger.Error(ex, $"Error retrieving all reset tokens: {ex.Message}");
+                _logger.LogError(ex, $"Error retrieving all reset tokens: {ex.Message}");
                 return Result<IEnumerable<ChangePasswordEntity>>.Failure($"Error retrieving all reset tokens.");
             }
         }
@@ -198,7 +197,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     if (tokensToDelete.Any())
                     {
                         _context.Changepassword.RemoveRange(tokensToDelete);
-                        _logger.Information("Marked {Count} existing reset tokens for deletion for PersonId {PersonId}.", tokensToDelete.Count, entity.PersonId);
+                        _logger.LogInformation("Marked {Count} existing reset tokens for deletion for PersonId {PersonId}.", tokensToDelete.Count, entity.PersonId);
                     }
 
                     // 3. Map the input domain entity to the database model.
@@ -211,16 +210,16 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                     // 4. Add the new token model to the DbContext.
                     await _context.Changepassword.AddAsync(dbModel);
-                    _logger.Information("Marked new reset token for addition for PersonId {PersonId}.", entity.PersonId);
+                    _logger.LogInformation("Marked new reset token for addition for PersonId {PersonId}.", entity.PersonId);
 
                     // 5. Save all tracked changes (deletions and the new addition) atomically.
                     int affectedRows = await _context.SaveChangesAsync();
-                    _logger.Debug("SaveChangesAsync completed within Create reset token transaction. Rows affected: {RowsAffected}", affectedRows);
+                    _logger.LogDebug("SaveChangesAsync completed within Create reset token transaction. Rows affected: {RowsAffected}", affectedRows);
 
                     // Optional check: Ensure at least the insert happened.
                     if (affectedRows == 0 && !tokensToDelete.Any()) // If nothing was deleted and nothing was inserted
                     {
-                        _logger.Warning("SaveChangesAsync reported 0 rows affected while creating reset token for PersonId {PersonId}, and no prior tokens were deleted.", entity.PersonId);
+                        _logger.LogWarning("SaveChangesAsync reported 0 rows affected while creating reset token for PersonId {PersonId}, and no prior tokens were deleted.", entity.PersonId);
                         // Rollback as the intended operation likely failed silently.
                         await transaction.RollbackAsync();
                         return Result<ChangePasswordEntity>.Failure("Failed to save new reset token.");
@@ -228,7 +227,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                     // 6. Commit the transaction as all operations succeeded.
                     await transaction.CommitAsync();
-                    _logger.Information("Transaction committed for Create reset token for PersonId {PersonId}.", entity.PersonId);
+                    _logger.LogInformation("Transaction committed for Create reset token for PersonId {PersonId}.", entity.PersonId);
 
                     // --- Workaround: Update domain entity ID post-save ---
                     // Reflects the database-generated ID back onto the input domain entity.
@@ -240,7 +239,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     else
                     {
                         // Logs a warning if the ID could not be set back on the domain entity.
-                        _logger.Warning("Could not set IdChangePassword on domain entity after creation for PersonId {PersonId}.", entity.PersonId);
+                        _logger.LogWarning("Could not set IdChangePassword on domain entity after creation for PersonId {PersonId}.", entity.PersonId);
                         // The returned 'entity' might have an incorrect ID (0) in this edge case.
                     }
                     // --- End Workaround ---
@@ -251,14 +250,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 catch (Exception ex) // Catches any exception during the transaction.
                 {
                     // If any error occurs, attempts to rollback the transaction.
-                    _logger.Error(ex, "Error occurred during Create reset token transaction for PersonId {PersonId}. Rolling back.", entity.PersonId);
+                    _logger.LogError(ex, "Error occurred during Create reset token transaction for PersonId {PersonId}. Rolling back.", entity.PersonId);
                     try
                     {
                         await transaction.RollbackAsync();
                     }
                     catch (Exception rbEx)
                     {
-                        _logger.Error(rbEx, "Error occurred during transaction rollback for PersonId {PersonId}.", entity.PersonId);
+                        _logger.LogError(rbEx, "Error occurred during transaction rollback for PersonId {PersonId}.", entity.PersonId);
                         // Log the rollback error, but the original exception is more relevant to return.
                     }
 
@@ -267,13 +266,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     if (ex is DbUpdateException dbEx)
                     {
                         // Log message remains Spanish in code.
-                        _logger.Error(dbEx, "DB transaction error creating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
+                        _logger.LogError(dbEx, "DB transaction error creating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
                         return Result<ChangePasswordEntity>.Failure("DB transaction error creating reset token.");
                     }
                     else
                     {
                         // Log message remains Spanish in code.
-                        _logger.Error(ex, "Transaction error creating reset token: {Error}", ex.Message);
+                        _logger.LogError(ex, "Transaction error creating reset token: {Error}", ex.Message);
                         return Result<ChangePasswordEntity>.Failure($"Transaction error creating reset token.");
                     }
                 }
@@ -305,17 +304,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex) // Handles concurrency conflicts.
             {
-                _logger.Error(ex, "Concurrency error updating reset token ID {Id}.", entity.IdChangePassword);  
+                _logger.LogError(ex, "Concurrency error updating reset token ID {Id}.", entity.IdChangePassword);  
                 return Result<bool>.Failure("Concurrency error updating reset token.");
             }
             catch (DbUpdateException dbEx) // Handles other database update errors.
             {
-                _logger.Error(dbEx, "DB error updating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "DB error updating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("DB error updating reset token.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error updating reset token: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error updating reset token: {Error}", ex.Message); 
                 return Result<bool>.Failure($"Error updating reset token.");
             }
         }
@@ -339,12 +338,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handles database deletion errors.
             {
-                _logger.Error(dbEx, "DB error deleting reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
+                _logger.LogError(dbEx, "DB error deleting reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
                 return Result<bool>.Failure($"DB error deleting reset token.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error deleting reset token: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error deleting reset token: {Error}", ex.Message); 
                 return Result<bool>.Failure($"Error deleting reset token.");
             }
         }

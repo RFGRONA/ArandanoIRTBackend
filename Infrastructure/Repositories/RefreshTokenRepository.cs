@@ -12,7 +12,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// Implements the <see cref="IRefreshTokenRepository"/> interface, providing data access logic
     /// for refresh token entities (<see cref="RefreshTokenEntity"/>) using Entity Framework Core.
     /// </summary>
-    public class RefreshTokenRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider) : IRefreshTokenRepository
+    public class RefreshTokenRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ILogger<RefreshTokenRepository> logger) : IRefreshTokenRepository
     {
         /// <summary>
         /// The database context used for data access.
@@ -23,9 +23,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// </summary>
         private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger instance for logging operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<RefreshTokenRepository>();
+        private readonly ILogger<RefreshTokenRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <summary>
         /// Maps a database context <see cref="Refreshtoken"/> entity to a domain <see cref="RefreshTokenEntity"/>.
@@ -100,11 +100,11 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // If no active tokens found for the session, consider the operation successful.
                 if (!tokensToRevoke.Any())
                 {
-                    _logger.Information("No active refresh tokens found to revoke for session ID {SessionId}.", sessionId);
+                    _logger.LogInformation("No active refresh tokens found to revoke for session ID {SessionId}.", sessionId);
                     return Result<bool>.Success(true); // Nothing to revoke is considered success.
                 }
 
-                _logger.Information("Found {Count} active refresh tokens for session ID {SessionId}. Attempting revocation.", tokensToRevoke.Count, sessionId);
+                _logger.LogInformation("Found {Count} active refresh tokens for session ID {SessionId}. Attempting revocation.", tokensToRevoke.Count, sessionId);
 
                 // Mark each found token as revoked.
                 foreach (var token in tokensToRevoke)
@@ -123,23 +123,23 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Check if the number of affected rows matches the expected count.
                 if (rowsAffected >= tokensToRevoke.Count)
                 {
-                    _logger.Information("Successfully revoked {Count} refresh tokens for session ID {SessionId}.", rowsAffected, sessionId);
+                    _logger.LogInformation("Successfully revoked {Count} refresh tokens for session ID {SessionId}.", rowsAffected, sessionId);
                     return Result<bool>.Success(true);
                 }
                 else
                 {
-                    _logger.Warning("Revoked {RowsAffected} out of {ExpectedCount} tokens for session ID {SessionId}. Potential issue.", rowsAffected, tokensToRevoke.Count, sessionId);
+                    _logger.LogWarning("Revoked {RowsAffected} out of {ExpectedCount} tokens for session ID {SessionId}. Potential issue.", rowsAffected, tokensToRevoke.Count, sessionId);
                     return Result<bool>.Failure("Failed to revoke all expected tokens for session.");
                 }
             }
             catch (DbUpdateException dbEx) // Handle database update errors.
             {
-                _logger.Error($"Database error revoking tokens by session ID {sessionId}: {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError($"Database error revoking tokens by session ID {sessionId}: {dbEx.InnerException?.Message ?? dbEx.Message}");
                 return Result<bool>.Failure("Database error revoking tokens by session ID.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error("Error revoking tokens by session ID {SessionId}: {Message}", sessionId, ex.Message);
+                _logger.LogError("Error revoking tokens by session ID {SessionId}: {Message}", sessionId, ex.Message);
                 return Result<bool>.Failure("Error revoking tokens by session ID.");
             }
         }
@@ -164,7 +164,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error("Error retrieving refresh token by token value: {Error}", ex.Message); 
+                _logger.LogError("Error retrieving refresh token by token value: {Error}", ex.Message); 
                 return Result<RefreshTokenEntity>.Failure($"Error retrieving refresh token.");
             }
         }
@@ -186,7 +186,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error("Error retrieving active refresh tokens for person ID {PersonId}: {Error}", personId, ex.Message); 
+                _logger.LogError("Error retrieving active refresh tokens for person ID {PersonId}: {Error}", personId, ex.Message); 
                 return Result<IEnumerable<RefreshTokenEntity>>.Failure($"Error retrieving active refresh tokens for person ID.");
             }
         }
@@ -212,12 +212,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error("DB error deleting tokens by session: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
+                _logger.LogError("DB error deleting tokens by session: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
                 return Result<bool>.Failure("DB error deleting tokens by session.");
             }
             catch (Exception ex)
             {
-                _logger.Error("Error deleting tokens by session {SessionId}: {Error}", sessionId, ex.Message); 
+                _logger.LogError("Error deleting tokens by session {SessionId}: {Error}", sessionId, ex.Message); 
                 return Result<bool>.Failure($"Error deleting tokens by session.");
             }
         }
@@ -245,12 +245,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error("DB error deleting expired tokens: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError("DB error deleting expired tokens: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("DB error deleting expired tokens.");
             }
             catch (Exception ex)
             {
-                _logger.Error("Error deleting expired tokens for person ID {PersonId}: {Error}", personId, ex.Message);
+                _logger.LogError("Error deleting expired tokens for person ID {PersonId}: {Error}", personId, ex.Message);
                 return Result<bool>.Failure("Error deleting expired tokens for person ID.");
             }
         }
@@ -269,7 +269,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error("Error retrieving refresh token by ID {Id}: {Error}", id, ex.Message); 
+                _logger.LogError("Error retrieving refresh token by ID {Id}: {Error}", id, ex.Message); 
                 return Result<RefreshTokenEntity>.Failure("Error retrieving refresh token by ID.");
             }
         }
@@ -286,7 +286,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error("Error retrieving all refresh tokens: {Error}", ex.Message); 
+                _logger.LogError("Error retrieving all refresh tokens: {Error}", ex.Message); 
                 return Result<IEnumerable<RefreshTokenEntity>>.Failure($"Error retrieving all refresh tokens.");
             }
         }
@@ -315,7 +315,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 }
                 else
                 {
-                    _logger.Warning("Could not set IdRefreshToken on domain entity after creation.");
+                    _logger.LogWarning("Could not set IdRefreshToken on domain entity after creation.");
                 }
                 // --- End Workaround ---
 
@@ -324,12 +324,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error("DB error creating refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError("DB error creating refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<RefreshTokenEntity>.Failure("DB error creating refresh token.");
             }
             catch (Exception ex)
             {
-                _logger.Error("Error creating refresh token: {Error}", ex.Message); 
+                _logger.LogError("Error creating refresh token: {Error}", ex.Message); 
                 return Result<RefreshTokenEntity>.Failure($"Error creating refresh token.");
             }
         }
@@ -357,17 +357,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex) // Handles concurrency conflicts.
             {
-                _logger.Error(ex, "Concurrency error updating refresh token ID {IdRefreshToken}.", entity.IdRefreshToken); 
+                _logger.LogError(ex, "Concurrency error updating refresh token ID {IdRefreshToken}.", entity.IdRefreshToken); 
                 return Result<bool>.Failure("Concurrency error updating refresh token.");
             }
             catch (DbUpdateException dbEx) // Handles other DB update errors.
             {
-                _logger.Error("DB error updating refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError("DB error updating refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("DB error updating refresh token");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error updating refresh token: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error updating refresh token: {Error}", ex.Message); 
                 return Result<bool>.Failure("Error updating refresh token.");
             }
         }
@@ -390,12 +390,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handles DB deletion errors.
             {
-                _logger.Error("DB error deleting refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError("DB error deleting refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure($"DB error deleting refresh token.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error("Error deleting refresh token: {Error}", ex.Message); 
+                _logger.LogError("Error deleting refresh token: {Error}", ex.Message); 
                 return Result<bool>.Failure($"Error deleting refresh token.");
             }
         }

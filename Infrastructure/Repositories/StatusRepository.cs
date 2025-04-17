@@ -15,7 +15,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// for status entities (<see cref="StatusEntity"/>) using Entity Framework Core.
     /// Includes caching mechanisms to improve performance for frequently accessed status data.
     /// </summary>
-    public class StatusRepository(ApplicationDbContext context, ICacheService cacheService, IDateTimeProvider dateTimeProvider) : IStatusRepository // Added IDateTimeProvider based on field usage
+    public class StatusRepository(ApplicationDbContext context, ICacheService cacheService, IDateTimeProvider dateTimeProvider, ILogger<StatusRepository> logger) : IStatusRepository // Added IDateTimeProvider based on field usage
     {
         /// <summary>
         /// The database context used for data access.
@@ -28,11 +28,11 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// <summary>
         /// Provider for obtaining consistent UTC timestamps (dependency added based on field usage).
         /// </summary>
-        private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider)); // Added based on field usage
+        private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider)); 
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger instance for logging repository operations.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<StatusRepository>();
+        private readonly ILogger<StatusRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <summary>
         /// Cache key for storing the list of all statuses.
@@ -123,12 +123,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             var cachedStatuses = _cacheService.Get<IEnumerable<StatusEntity>>(cacheKey);
             if (cachedStatuses != null)
             {
-                _logger.Debug("Cache hit for statuses by table name: {TableName}", tableName);
+                _logger.LogDebug("Cache hit for statuses by table name: {TableName}", tableName);
                 return Result<IEnumerable<StatusEntity>>.Success(cachedStatuses);
             }
 
             // Cache miss: Proceed to query the database.
-            _logger.Debug("Cache miss for statuses by table name: {TableName}. Querying database.", tableName);
+            _logger.LogDebug("Cache miss for statuses by table name: {TableName}. Querying database.", tableName);
             try
             {
                 // Query statuses, including the related TableRelation, filtering by table name (case-insensitive).
@@ -145,12 +145,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Log if no statuses were found for the given table name.
                 if (domainStatuses.Count == 0)
                 {
-                    _logger.Warning("No statuses found in DB for table name: {TableName}", tableName);
+                    _logger.LogWarning("No statuses found in DB for table name: {TableName}", tableName);
                 }
                 else // If statuses were found, cache them.
                 {
                     _cacheService.Set(cacheKey, domainStatuses, CacheDuration); // Set cache with duration.
-                    _logger.Information("Cached {Count} statuses for table name: {TableName}", domainStatuses.Count, tableName);
+                    _logger.LogInformation("Cached {Count} statuses for table name: {TableName}", domainStatuses.Count, tableName);
                 }
 
                 // Return the retrieved (and potentially cached) statuses.
@@ -158,7 +158,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex) // Handle potential database errors.
             {
-                _logger.Error($"Error retrieving statuses for table {tableName}: {ex.Message}");
+                _logger.LogError($"Error retrieving statuses for table {tableName}: {ex.Message}");
                 return Result<IEnumerable<StatusEntity>>.Failure("Error retrieving statuses.");
             }
         }
@@ -175,13 +175,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 var statusFromCache = allStatusesResult.Value.FirstOrDefault(s => s.IdStatus == id);
                 if (statusFromCache != null)
                 {
-                    _logger.Debug("Cache hit for status ID {StatusId} via GetAll cache.", id);
+                    _logger.LogDebug("Cache hit for status ID {StatusId} via GetAll cache.", id);
                     return Result<StatusEntity>.Success(statusFromCache);
                 }
             }
 
             // Cache miss (either GetAll failed or status not in the cached list). Query DB directly.
-            _logger.Debug("Status ID {StatusId} not found in GetAll cache. Querying database directly.", id);
+            _logger.LogDebug("Status ID {StatusId} not found in GetAll cache. Querying database directly.", id);
             try
             {
                 // Query by ID, including TableRelation, no tracking.
@@ -199,7 +199,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex) // Handle potential database errors.
             {
-                _logger.Error( $"Error retrieving status by ID {id}: {ex.Message}");
+                _logger.LogError( $"Error retrieving status by ID {id}: {ex.Message}");
                 return Result<StatusEntity>.Failure($"Error retrieving status by ID.");
             }
         }
@@ -211,12 +211,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             var cachedStatuses = _cacheService.Get<IEnumerable<StatusEntity>>(CACHE_KEY_ALL_STATUSES);
             if (cachedStatuses != null)
             {
-                _logger.Debug("Cache hit for GetAll statuses.");
+                _logger.LogDebug("Cache hit for GetAll statuses.");
                 return Result<IEnumerable<StatusEntity>>.Success(cachedStatuses);
             }
 
             // Cache miss: Proceed to query the database.
-            _logger.Debug("Cache miss for GetAll statuses. Querying database.");
+            _logger.LogDebug("Cache miss for GetAll statuses. Querying database.");
             try
             {
                 // Query all statuses, including TableRelation, no tracking.
@@ -230,14 +230,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // Store the retrieved list in the cache.
                 _cacheService.Set(CACHE_KEY_ALL_STATUSES, domainStatuses, CacheDuration);
-                _logger.Information("Cached {Count} total statuses.", domainStatuses.Count);
+                _logger.LogInformation("Cached {Count} total statuses.", domainStatuses.Count);
 
                 // Return the retrieved and cached statuses.
                 return Result<IEnumerable<StatusEntity>>.Success(domainStatuses);
             }
             catch (Exception ex) // Handle potential database errors.
             {
-                _logger.Error($"Error retrieving all statuses: {ex.Message}");
+                _logger.LogError($"Error retrieving all statuses: {ex.Message}");
                 return Result<IEnumerable<StatusEntity>>.Failure($"Error retrieving all statuses.");
             }
         }
@@ -245,27 +245,23 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// <inheritdoc/>
         public async Task<Result<StatusEntity>> Create(StatusEntity entity)
         {
-            // Basic null check.
             if (entity == null)
                 return Result<StatusEntity>.Failure("Status entity cannot be null.");
 
             try
             {
-                // Map domain entity to DB model.
                 var statusDbModel = MapToDbModel(entity);
-                // Adds to context and saves.
                 await _context.Status.AddAsync(statusDbModel);
                 int success = await _context.SaveChangesAsync();
 
-                // Returns failure if save failed.
                 if (success == 0)
                 {
-                    _logger.Warning("Failed to save status to the database. Entity: {@StatusEntity}", entity);
+                    _logger.LogWarning("Failed to save status to the database. Entity: {@StatusEntity}", entity);
                     return Result<StatusEntity>.Failure("Failed to save status to the database.");
                 }
 
-                // Invalidate relevant cache entries after successful creation.
-                InvalidateStatusCache(entity.TableRelationId); // Pass TableRelationId for potential specific cache invalidation.
+                // Invalidate only the general cache after creation, as getting table name reliably might require extra query.
+                InvalidateStatusCache(); // Call simplified version without table name
 
                 // --- Workaround: Update domain entity ID post-save ---
                 var idProperty = typeof(StatusEntity).GetProperty(nameof(StatusEntity.IdStatus));
@@ -275,21 +271,20 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 }
                 else
                 {
-                    _logger.Warning("Could not set IdStatus on domain entity after creation.");
+                    _logger.LogWarning("Could not set IdStatus on domain entity after creation.");
                 }
                 // --- End Workaround ---
 
-                // Returns success with the potentially updated domain entity.
                 return Result<StatusEntity>.Success(entity);
             }
             catch (DbUpdateException dbEx) // Handle DB errors.
             {
-                _logger.Error($"Database error creating status. Entity: {@entity}, {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError($"Database error creating status. Entity: {@entity}, {dbEx.InnerException?.Message ?? dbEx.Message}");
                 return Result<StatusEntity>.Failure($"Database error creating status.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error($"Database error creating status. Entity: {@entity}, {ex.InnerException?.Message ?? ex.Message}");
+                _logger.LogError($"Database error creating status. Entity: {@entity}, {ex.InnerException?.Message ?? ex.Message}");
                 return Result<StatusEntity>.Failure($"Error creating status.");
             }
         }
@@ -297,64 +292,57 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// <inheritdoc/>
         public async Task<Result<bool>> Update(StatusEntity entity)
         {
-            // Basic null check.
             if (entity == null)
                 return Result<bool>.Failure("Status entity cannot be null.");
 
             try
             {
-                // Finds existing entity, including TableRelation to get original table info for cache invalidation.
+                // Find existing entity, including TableRelation to get original table info.
                 var existingStatus = await _context.Status
-                                                   .Include(s => s.Tablerelation) // Include for original table info
+                                                   .Include(s => s.Tablerelation) // Include relation
                                                    .FirstOrDefaultAsync(s => s.Idstatus == entity.IdStatus);
 
-                // Returns failure if not found.
                 if (existingStatus == null)
-                    return Result<bool>.Failure("Status not found for update.");
+                    return Result<bool>.Failure($"Status with ID {entity.IdStatus} not found for update.");
 
-                // Store original table info before mapping overwrites it.
-                int? originalTableId = existingStatus.Tablerelationid;
+                // Store original table name *before* mapping overwrites navigation property potentially.
                 string? originalTableName = existingStatus.Tablerelation?.Tablename;
 
-                // Maps domain entity onto existing tracked entity.
+                // Map domain entity onto existing tracked entity.
                 MapToDbModel(entity, existingStatus);
+                // Explicitly set UpdatedAt if needed (consider if your entity/mapper handles this)
+                // existingStatus.Updatedat = _dateTimeProvider.GetUtcNow(); // Example if needed
 
                 // Marks for update and saves.
                 _context.Status.Update(existingStatus);
                 int rowsAffected = await _context.SaveChangesAsync();
 
-                // If update was successful, invalidate cache.
+                // If update was successful, invalidate cache using the original table name.
                 if (rowsAffected > 0)
                 {
-                    // Invalidate based on original table info.
-                    InvalidateStatusCache(originalTableId, originalTableName);
-                    // If TableRelationId was changed, invalidate cache for the new table too.
-                    if (entity.TableRelationId != originalTableId)
-                    {
-                        InvalidateStatusCache(entity.TableRelationId); // Pass only ID, helper will look up name if needed.
-                    }
+                    // Invalidate based on the *original* table name.
+                    InvalidateStatusCache(originalTableName);
                 }
-                else // Log if no rows affected.
+                else
                 {
-                    _logger.Warning("No changes were detected or saved for status ID: {StatusId}", entity.IdStatus);
+                    _logger.LogWarning("No changes were detected or saved for status ID: {StatusId}", entity.IdStatus);
                 }
 
-                // Returns success if rows were affected.
                 return Result<bool>.Success(rowsAffected > 0);
             }
             catch (DbUpdateConcurrencyException ex) // Handle concurrency conflicts.
             {
-                _logger.Warning(ex, "Concurrency conflict updating status with ID {StatusId}", entity.IdStatus);
+                _logger.LogWarning(ex, "Concurrency conflict updating status with ID {StatusId}", entity.IdStatus);
                 return Result<bool>.Failure($"Concurrency conflict updating status.");
             }
             catch (DbUpdateException dbEx) // Handle other DB update errors.
             {
-                _logger.Error($"Database error updating status ID: {entity.IdStatus}. Entity: {@entity}. Message: {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError($"Database error updating status ID: {entity.IdStatus}. Entity: {@entity}. Message: {dbEx.InnerException?.Message ?? dbEx.Message}");
                 return Result<bool>.Failure($"Database error updating status.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error($"Error updating status ID: {entity.IdStatus}. Entity: {entity}, {ex.Message}");
+                _logger.LogError($"Error updating status ID: {entity.IdStatus}. Entity: {entity}, {ex.Message}");
                 return Result<bool>.Failure($"Error updating status.");
             }
         }
@@ -364,44 +352,42 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         {
             try
             {
-                // Finds entity, including TableRelation for cache invalidation info.
+                // Find entity, including TableRelation for cache invalidation info.
                 var status = await _context.Status
-                                           .Include(s => s.Tablerelation) // Include for table info
+                                           .Include(s => s.Tablerelation) // Include relation
                                            .FirstOrDefaultAsync(s => s.Idstatus == id);
 
                 // Returns failure if not found.
                 if (status == null)
-                    return Result<bool>.Failure("Status not found for deletion.");
+                    return Result<bool>.Failure($"Status with ID {id} not found for deletion.");
 
-                // Store table info before removing.
-                int? tableId = status.Tablerelationid;
+                // Store table info *before* removing.
                 string? tableName = status.Tablerelation?.Tablename;
 
                 // Removes from context and saves.
                 _context.Status.Remove(status);
                 int rowsAffected = await _context.SaveChangesAsync();
 
-                // If successful, invalidate cache.
+                // If successful, invalidate cache using the table name.
                 if (rowsAffected > 0)
                 {
-                    InvalidateStatusCache(tableId, tableName);
+                    InvalidateStatusCache(tableName);
                 }
-                else // Log if delete failed.
+                else
                 {
-                    _logger.Warning("Failed to delete status (no rows affected) ID: {StatusId}", id);
+                    _logger.LogWarning("Failed to delete status (no rows affected) ID: {StatusId}", id);
                 }
 
-                // Returns success based on rows affected.
                 return Result<bool>.Success(rowsAffected > 0);
             }
             catch (DbUpdateException dbEx) // Handle DB errors (e.g., FK constraints).
             {
-                _logger.Error($"Database error deleting status ID: {id} (check for related records): {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError($"Database error deleting status ID: {id} (check for related records): {dbEx.InnerException?.Message ?? dbEx.Message}");
                 return Result<bool>.Failure($"Database error deleting status (check for related records).");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.Error($"Error deleting status ID: {id}, {ex.Message}");
+                _logger.LogError($"Error deleting status ID: {id}, {ex.Message}");
                 return Result<bool>.Failure("Error deleting status.");
             }
         }
@@ -409,51 +395,41 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// <summary>
         /// Invalidates cache entries related to statuses.
         /// Always removes the "All Statuses" cache entry.
-        /// Also removes the table-specific cache entry if the table name or relation ID is provided.
+        /// Also removes the table-specific cache entry if the table name is provided.
         /// </summary>
-        /// <param name="tableRelationId">The optional TableRelation ID associated with the status change.</param>
-        /// <param name="tableName">The optional table name associated with the status change (preferred if known).</param>
-        private void InvalidateStatusCache(int? tableRelationId, string? tableName = null)
+        /// <param name="tableName">Optional. The specific table name whose status cache should be invalidated.</param>
+        private void InvalidateStatusCache(string? tableName = null) // Simplified: only takes optional tableName
         {
             try
             {
                 // Always invalidate the cache for all statuses.
                 _cacheService.Remove(CACHE_KEY_ALL_STATUSES);
-                _logger.Debug("Invalidated cache key: {CacheKey}", CACHE_KEY_ALL_STATUSES);
+                _logger.LogDebug("Invalidated cache key: {CacheKey}", CACHE_KEY_ALL_STATUSES);
 
-                // If table name is directly provided, use it to invalidate specific cache.
+                // If a specific table name is provided, invalidate its cache too.
                 if (!string.IsNullOrWhiteSpace(tableName))
                 {
                     string tableCacheKey = string.Format(CACHE_KEY_TABLE_FORMAT, tableName.ToLowerInvariant());
                     _cacheService.Remove(tableCacheKey);
-                    _logger.Debug("Invalidated cache key: {CacheKey}", tableCacheKey);
+                    _logger.LogDebug("Invalidated cache key for table {TableName}: {CacheKey}", tableName, tableCacheKey);
                 }
-                // If only tableRelationId is available, look up the table name to invalidate specific cache.
-                else if (tableRelationId.HasValue)
+                else
                 {
-                    // Performs a quick synchronous query (or could be async if preferred/needed) to find table name.
-                    // Using synchronous FirstOrDefault here for simplicity within the invalidation method. Consider potential blocking.
-                    var relatedTableName = _context.Tablerelation // Assumes TableRelation maps to this EF entity name
-                                               .Where(tr => tr.Idtablerelation == tableRelationId.Value)
-                                               .Select(tr => tr.Tablename)
-                                               .FirstOrDefault();
-
-                    if (!string.IsNullOrWhiteSpace(relatedTableName))
+                    // Fallback: Invalidate all table-specific cache entries if tableName is not provided.
+                    var allTableNames = _context.Tablerelation.Select(tr => tr.Tablename.ToLowerInvariant()).Distinct().ToList();
+                    foreach (var table in allTableNames)
                     {
-                        string tableCacheKey = string.Format(CACHE_KEY_TABLE_FORMAT, relatedTableName.ToLowerInvariant());
+                        string tableCacheKey = string.Format(CACHE_KEY_TABLE_FORMAT, table);
                         _cacheService.Remove(tableCacheKey);
-                        _logger.Debug("Invalidated cache key (via ID lookup): {CacheKey}", tableCacheKey);
-                    }
-                    else // Log if table name lookup failed.
-                    {
-                        _logger.Warning("Could not find table name for TableRelationId {TableRelationId} during cache invalidation.", tableRelationId.Value);
+                        _logger.LogDebug("Invalidated cache key for table {TableName}: {CacheKey}", table, tableCacheKey);
                     }
                 }
+                // Removed the database lookup logic based on tableRelationId.
             }
             catch (Exception ex)
             {
                 // Log errors during cache invalidation but do not let them fail the main operation.
-                _logger.Error(ex, "Error during status cache invalidation for TableRelationId {TableRelationId} / TableName {TableName}.", tableRelationId, tableName);
+                _logger.LogError(ex, "Error during status cache invalidation for TableName {TableName}.", tableName ?? "<null>");
             }
         }
     }

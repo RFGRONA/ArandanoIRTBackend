@@ -4,7 +4,6 @@ using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
 using ArandanoIRT_Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Repositories
 {
@@ -12,7 +11,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
     /// Implements the <see cref="IFailedLoginAttemptRepository"/> interface, providing data access logic
     /// for failed login attempt entities (<see cref="FailedLoginAttemptEntity"/>) using Entity Framework Core.
     /// </summary>
-    public class FailedLoginAttemptRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider) : IFailedLoginAttemptRepository
+    public class FailedLoginAttemptRepository(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ILogger<FailedLoginAttemptRepository> logger) : IFailedLoginAttemptRepository
     {
         /// <summary>
         /// The database context used for data access.
@@ -23,9 +22,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// </summary>
         private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         /// <summary>
-        /// Static Serilog logger instance specific to this repository.
+        /// Logger instance for logging repository operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<FailedLoginAttemptRepository>();
+        private readonly ILogger<FailedLoginAttemptRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         /// <summary>
         /// Maps a database context <see cref="Failedloginattempt"/> entity to a domain <see cref="FailedLoginAttemptEntity"/>.
@@ -88,7 +87,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving recent failed attempts for person ID {PersonId}", personId);
+                _logger.LogError(ex, "Error retrieving recent failed attempts for person ID {PersonId}", personId);
                 return Result<IEnumerable<FailedLoginAttemptEntity>>.Failure("Error retrieving recent failed attempts for person.");
             }
         }
@@ -114,7 +113,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving recent failed attempts for IP {IpAddress}", ipAddress);
+                _logger.LogError(ex, "Error retrieving recent failed attempts for IP {IpAddress}", ipAddress);
                 return Result<IEnumerable<FailedLoginAttemptEntity>>.Failure("Error retrieving recent failed attempts.");
             }
         }
@@ -133,7 +132,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving failed attempt by ID {FailedAttemptId}", id);
+                _logger.LogError(ex, "Error retrieving failed attempt by ID {FailedAttemptId}", id);
                 return Result<FailedLoginAttemptEntity>.Failure("Error retrieving failed attempt by ID.");
             }
         }
@@ -150,7 +149,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error retrieving all failed attempts.");
+                _logger.LogError(ex, "Error retrieving all failed attempts.");
                 return Result<IEnumerable<FailedLoginAttemptEntity>>.Failure("Error retrieving all failed attempts.");
             }
         }
@@ -179,7 +178,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 }
                 else
                 {
-                    _logger.Warning("Could not set IdFailedLoginAttempt on domain entity after creation.");
+                    _logger.LogWarning("Could not set IdFailedLoginAttempt on domain entity after creation.");
                 }
                 // --- End Workaround ---
 
@@ -188,12 +187,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.Error(dbEx, "DB error creating failed attempt record: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "DB error creating failed attempt record: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<FailedLoginAttemptEntity>.Failure("DB error creating failed attempt record.");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error creating failed attempt record: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error creating failed attempt record: {Error}", ex.Message); 
                 return Result<FailedLoginAttemptEntity>.Failure("Error creating failed attempt record.");
             }
         }
@@ -221,17 +220,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex) // Handles concurrency conflicts.
             {
-                _logger.Error(ex, "Concurrency error updating failed attempt ID {FailedAttemptId}", entity.IdFailedLoginAttempt); 
+                _logger.LogError(ex, "Concurrency error updating failed attempt ID {FailedAttemptId}", entity.IdFailedLoginAttempt); 
                 return Result<bool>.Failure("Concurrency error updating failed attempt ID.");
             }
             catch (DbUpdateException dbEx) // Handles other DB update errors.
             {
-                _logger.Error(dbEx, "DB error updating failed attempt record: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "DB error updating failed attempt record: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("DB error updating failed attempt record.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error updating failed attempt record: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error updating failed attempt record: {Error}", ex.Message); 
                 return Result<bool>.Failure("Error updating failed attempt record.");
             }
         }
@@ -254,12 +253,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handles DB deletion errors.
             {
-                _logger.Error(dbEx, "DB error deleting failed attempt record: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
+                _logger.LogError(dbEx, "DB error deleting failed attempt record: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
                 return Result<bool>.Failure("DB error deleting failed attempt record.");
             }
             catch (Exception ex) // Handles general errors.
             {
-                _logger.Error(ex, "Error deleting failed attempt record: {Error}", ex.Message); 
+                _logger.LogError(ex, "Error deleting failed attempt record: {Error}", ex.Message); 
                 return Result<bool>.Failure("Error deleting failed attempt record.");
             }
         }

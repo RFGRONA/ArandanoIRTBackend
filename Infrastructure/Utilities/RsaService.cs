@@ -1,7 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using ArandanoIRT_Backend.Application.Interfaces.Utilities;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Utilities // Note: Changed namespace to Utilities based on previous context
 {
@@ -17,26 +16,29 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities // Note: Changed namespac
         /// </summary>
         private readonly RSAUtility _rsaUtility;
         /// <summary>
-        /// Static Serilog logger instance specific to this service.
+        /// Logger instance for logging RSA operations and errors.
         /// </summary>
-        private readonly Serilog.ILogger _logger = Log.ForContext<RsaService>();
+        private readonly ILogger<RsaService> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RsaService"/> class.
         /// Creates an internal <see cref="RSAUtility"/> which generates a new RSA key pair upon instantiation.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown if RSA key pair generation fails during initialization.</exception>
-        public RsaService()
+        public RsaService(ILogger<RsaService> logger)
         {
+
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             try
             {
                 // Creates the utility which generates the RSA key pair.
                 _rsaUtility = new RSAUtility();
-                _logger.Information("RSA keys generated successfully and RsaService initialized.");
+                _logger.LogInformation("RSA keys generated successfully and RsaService initialized.");
             }
             catch (Exception ex) // Catches potential errors during key generation.
             {
-                _logger.Fatal(ex, "Failed to initialize RSA keys within RSAUtility. RSA functionality will be unavailable.");
+                _logger.LogError(ex, "Failed to initialize RSA keys within RSAUtility. RSA functionality will be unavailable.");
                 // Wraps the original exception to provide context.
                 throw new InvalidOperationException("Fatal error: Failed to initialize RSA keys.", ex);
             }
@@ -52,7 +54,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities // Note: Changed namespac
             }
             catch (Exception ex) // Catches errors during encryption.
             {
-                _logger.Error(ex, "RSA encryption failed.");
+                _logger.LogError(ex, "RSA encryption failed.");
                 // Throws a cryptographic exception indicating encryption failure.
                 throw new CryptographicException("RSA encryption failed.", ex);
             }
@@ -69,13 +71,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities // Note: Changed namespac
             // Specifically catches crypto errors (e.g., bad padding, invalid base64) which might indicate bad data.
             catch (CryptographicException cryptEx)
             {
-                _logger.Warning(cryptEx, "RSA decryption failed, likely due to invalid encrypted data format, padding, or key mismatch.");
+                _logger.LogWarning(cryptEx, "RSA decryption failed, likely due to invalid encrypted data format, padding, or key mismatch.");
                 throw; // Re-throws the original cryptographic exception.
             }
             // Catches any other unexpected errors during decryption.
             catch (Exception ex)
             {
-                _logger.Error(ex, "Unexpected error during RSA decryption.");
+                _logger.LogError(ex, "Unexpected error during RSA decryption.");
                 // Throws a new cryptographic exception indicating an unexpected decryption failure.
                 throw new CryptographicException("RSA decryption failed unexpectedly.", ex);
             }

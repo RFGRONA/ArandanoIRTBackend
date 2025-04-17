@@ -72,7 +72,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             audit.Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name; // Gets table name.
             audit.Columnname = "ALL"; // Sets column name to "ALL" for row-level auditing.
             audit.Action = entry.State.ToString().ToUpperInvariant(); // Action based on entity state.
-            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry); // Retrieves the primary key of the affected record.
+            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0; // Retrieves the primary key of the affected record.
             audit.Cropid = null; // Explicitly sets CropId to null for these "system" table audits.
 
             // Logs the generation attempt.
