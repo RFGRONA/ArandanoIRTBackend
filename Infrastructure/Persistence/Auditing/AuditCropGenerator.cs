@@ -91,7 +91,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                                      );
                     audit.Newvalue = null; // No new value for deletes.
                     // Retrieves IDs using the helper service (likely from original values).
-                    audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry);
+                    audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0;
                     // For Crop entities, the CropId is the same as the primary key (RecordId).
                     audit.Cropid = audit.Recordid;
                     _logger.LogInformation("Generating DELETE audit entry for Crop ID: {CropId}", audit.Recordid);
@@ -107,7 +107,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                                          _auditHelper.GetValuesDictionary(entry.CurrentValues)
                                      );
                     // Retrieves IDs using the helper service.
-                    audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry);
+                    audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0;
                     audit.Cropid = audit.Recordid;
                     _logger.LogInformation("Generating UPDATE audit entry for Crop ID: {CropId}", audit.Recordid);
                     break;

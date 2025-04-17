@@ -85,7 +85,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                     _logger.LogInformation("Generating DELETE audit entry for Person ID: {PersonId}", recordId);
                     auditEntries.Add(new Auditperson
                     {
-                        Recordid = recordId, // ID of the deleted person.
+                        Recordid = recordId ?? 0, // ID of the deleted person.
                         Cropid = cropId, // Original CropId.
                         Action = "DELETE",
                         Columnname = "ALL", // For DELETE, indicates the whole entity.
@@ -111,7 +111,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                         // Creates a separate audit entry for each modified (non-password) property.
                         auditEntries.Add(new Auditperson
                         {
-                            Recordid = recordId, // ID of the modified person.
+                            Recordid = recordId ?? 0, // ID of the modified person.
                             Cropid = cropId, // Current CropId (or original, depending on helper logic).
                             Action = "UPDATE",
                             Columnname = property.Metadata.Name, // Name of the specific modified column.

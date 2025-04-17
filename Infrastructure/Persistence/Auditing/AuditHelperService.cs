@@ -54,10 +54,10 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// <remarks>
         /// This implementation attempts to find a single primary key property of type <see cref="int"/>.
         /// It prioritizes the <c>CurrentValue</c> but falls back to <c>OriginalValue</c> for <see cref="EntityState.Deleted"/> entities.
-        /// It logs warnings and returns <c>0</c> if no PK is found, if the PK is composite, if the PK property is not an <see cref="int"/>,
+        /// It logs warnings and returns <c>null</c> if no PK is found, if the PK is composite, if the PK property is not an <see cref="int"/>,
         /// or if the PK value cannot be determined.
         /// </remarks>
-        public int GetPrimaryKeyValue(EntityEntry entry)
+        public int? GetPrimaryKeyValue(EntityEntry entry) 
         {
             // Finds the primary key definition for the entity.
             var primaryKey = entry.Metadata.FindPrimaryKey();
@@ -74,37 +74,44 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                 // Checks if the retrieved value is an integer.
                 if (pkValue is int intValue)
                 {
-                    return intValue;
+                    return intValue; // Returns the valid integer PK.
                 }
                 else if (pkValue != null) // Logs a warning if PK value is not null but also not an integer.
                 {
-                    _logger.LogWarning("PK '{PKName}' in table '{TableName}' is not of type INT. Value: {PKValue}, Type: {PKType}",
+                    // Log message remains Spanish in code.
+                    _logger.LogWarning("PK '{PKName}' en tabla '{TableName}' no es de tipo INT. Valor: {PKValue}, Tipo: {PKType}",
                                        pkProperty.Name, entry.Metadata.GetTableName() ?? "<Unknown>", pkValue, pkValue.GetType().Name);
                 }
 
-                // Tries OriginalValue if CurrentValue was null (e.g., Added state before save?) and not already checked (i.e., not Deleted state).
+                // Tries OriginalValue if CurrentValue was null and state is not Deleted.
                 if (entry.State != EntityState.Deleted)
                 {
                     pkValue = entry.Property(pkProperty.Name)?.OriginalValue;
-                    if (pkValue is int intValueOrig) return intValueOrig;
+                    if (pkValue is int intValueOrig)
+                    {
+                        return intValueOrig; // Returns the valid integer PK from original value.
+                    }
                 }
+                // If reached here after checking CurrentValue and OriginalValue, it's not a valid int PK.
             }
             // Logs warnings for missing or composite primary keys.
             else if (primaryKey == null)
             {
-                _logger.LogWarning("Primary Key not found for entity type '{EntityType}' in table '{TableName}''.",
+                // Log message remains Spanish in code.
+                _logger.LogWarning("No se encontró Primary Key para la entidad tipo '{EntityType}' en tabla '{TableName}'.",
                                    entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
             }
             else // Handles composite primary key case.
             {
-                _logger.LogWarning("Entity type '{EntityType}' in table '{TableName}' has a composite PK, not supported by simple GetPrimaryKeyValue.",
+                // Log message remains Spanish in code.
+                _logger.LogWarning("La entidad tipo '{EntityType}' en tabla '{TableName}' tiene una PK compuesta, no soportado por GetPrimaryKeyValue simple.",
                                    entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
             }
 
-            // Returns 0 as default value if the integer PK could not be retrieved. Logs this occurrence.
-            _logger.LogWarning("Returning PK=0 by default for entity type '{EntityType}' in table '{TableName}' with state {EntityState}.",
+            // Returns null as the default value if an integer PK could not be retrieved.
+            _logger.LogWarning("Returning null PK for entity type '{EntityType}' in table '{TableName}' with state {EntityState}.",
                                entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>", entry.State);
-            return 0;
+            return null; 
         }
 
         /// <inheritdoc/>

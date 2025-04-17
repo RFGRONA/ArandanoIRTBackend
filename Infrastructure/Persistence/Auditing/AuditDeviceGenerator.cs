@@ -62,7 +62,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             // Sets specific audit information for the device change.
             audit.Columnname = "ALL"; // Sets column name to "ALL" for row-level auditing.
             audit.Action = entry.State.ToString().ToUpperInvariant(); // Action based on entity state.
-            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry); // Gets the primary key of the Devicedata entity.
+            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0; // Gets the primary key of the Devicedata entity.
             audit.Cropid = _auditHelper.GetCropIdValue(entry);       // Gets the CropId foreign key from the Devicedata entity.
 
             // Logs the generation attempt.
