@@ -5,7 +5,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Data;
 
 public partial class Plantdata
 {
-    public int Idplantstate { get; set; }
+    public int Idplantdata { get; set; }
 
     public string Nameplant { get; set; } = null!;
 

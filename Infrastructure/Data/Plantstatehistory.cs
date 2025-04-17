@@ -5,7 +5,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Data;
 
 public partial class Plantstatehistory
 {
-    public int Idplantstatehistory { get; set; }
+    public int Idplantdatahistory { get; set; }
 
     public DateTime Changedat { get; set; }
 

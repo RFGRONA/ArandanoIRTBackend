@@ -535,7 +535,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Plantdata>(entity =>
         {
-            entity.HasKey(e => e.Idplantstate).HasName("plantdata_pkey");
+            entity.HasKey(e => e.Idplantdata).HasName("plantdata_pkey");
 
             entity.ToTable("plantdata");
 
@@ -543,7 +543,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Statusid, "plantdata_statusid");
 
-            entity.Property(e => e.Idplantstate).HasColumnName("idplantstate");
+            entity.Property(e => e.Idplantdata).HasColumnName("idplantdata");
             entity.Property(e => e.Cropid).HasColumnName("cropid");
             entity.Property(e => e.Nameplant)
                 .HasMaxLength(30)
@@ -612,7 +612,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Plantstatehistory>(entity =>
         {
-            entity.HasKey(e => e.Idplantstatehistory).HasName("plantstatehistory_pkey");
+            entity.HasKey(e => e.Idplantdatahistory).HasName("plantstatehistory_pkey");
 
             entity.ToTable("plantstatehistory");
 
@@ -622,7 +622,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Statusid, "plantstatehistory_statusid");
 
-            entity.Property(e => e.Idplantstatehistory).HasColumnName("idplantstatehistory");
+            entity.Property(e => e.Idplantdatahistory).HasColumnName("idplantdatahistory");
             entity.Property(e => e.Changedat).HasColumnName("changedat");
             entity.Property(e => e.Changedby).HasColumnName("changedby");
             entity.Property(e => e.Plantid).HasColumnName("plantid");
