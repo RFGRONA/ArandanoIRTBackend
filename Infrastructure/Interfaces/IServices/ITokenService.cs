@@ -15,34 +15,54 @@ namespace ArandanoIRT_Backend.Infrastructure.Interfaces.IServices
     {
         /// <summary>
         /// Asynchronously generates a new set of access and refresh tokens for a specified user.
-        /// Creates and stores the refresh token information (including context like IP, UserAgent) in the database.
+        /// Creates and stores the refresh token information (including IP, UserAgent, and device info) in the database.
         /// </summary>
         /// <param name="person">The <see cref="PersonEntity"/> for whom to generate tokens.</param>
         /// <param name="ipAddress">The IP address of the client requesting the tokens.</param>
         /// <param name="userAgent">The user agent string of the client requesting the tokens.</param>
         /// <param name="deviceInfo">Optional descriptive information about the client device.</param>
         /// <returns>
-        /// A <see cref="Task{TResult}"/> representing the asynchronous operation, containing a
-        /// <see cref="Result{T}"/> which holds a <see cref="TokenResponseDto"/> (containing the access token,
-        /// refresh token, and access token expiry) if successful, or a failure result otherwise.
+        /// A <see cref="Task{TResult}"/> containing a <see cref="Result{T}"/> with a <see cref="TokenResponseDto"/> if successful, or failure otherwise.
         /// </returns>
-        Task<Result<TokenResponseDto>> GenerateAndStoreTokensAsync(PersonEntity person, string ipAddress, string userAgent, string? deviceInfo = null);
+        Task<Result<TokenResponseDto>> GenerateAndStoreTokensAsync(PersonEntity person, string ipAddress, string userAgent, string? deviceInfo);
 
         /// <summary>
-        /// Asynchronously validates a provided refresh token against the database, generates a new set of access
-        /// and refresh tokens if the provided token is valid and active, revokes the old refresh token (marking it as replaced),
-        /// and stores the new refresh token information.
+        /// Asynchronously generates a new set of access and refresh tokens for a specified user.
+        /// Creates and stores the refresh token information (including IP, UserAgent) in the database.
+        /// Device information will be stored as null or default.
+        /// </summary>
+        /// <param name="person">The <see cref="PersonEntity"/> for whom to generate tokens.</param>
+        /// <param name="ipAddress">The IP address of the client requesting the tokens.</param>
+        /// <param name="userAgent">The user agent string of the client requesting the tokens.</param>
+        /// <returns>
+        /// A <see cref="Task{TResult}"/> containing a <see cref="Result{T}"/> with a <see cref="TokenResponseDto"/> if successful, or failure otherwise.
+        /// </returns>
+        Task<Result<TokenResponseDto>> GenerateAndStoreTokensAsync(PersonEntity person, string ipAddress, string userAgent);
+
+        /// <summary>
+        /// Asynchronously validates a provided refresh token, generates new tokens, revokes the old one (Token Rotation),
+        /// and stores the new refresh token information including device info.
         /// </summary>
         /// <param name="refreshTokenValue">The opaque refresh token string provided by the client.</param>
         /// <param name="ipAddress">The IP address of the client making the refresh request.</param>
         /// <param name="userAgent">The user agent string of the client making the refresh request.</param>
         /// <param name="deviceInfo">Optional descriptive information about the client device making the refresh request.</param>
         /// <returns>
-        /// A <see cref="Task{TResult}"/> representing the asynchronous operation, containing a
-        /// <see cref="Result{T}"/> which holds a new <see cref="TokenResponseDto"/> if successful,
-        /// or a failure result with an error message otherwise (e.g., token not found, expired, revoked).
+        /// A <see cref="Task{TResult}"/> containing a <see cref="Result{T}"/> with a new <see cref="TokenResponseDto"/> if successful, or failure otherwise.
         /// </returns>
-        Task<Result<TokenResponseDto>> RefreshTokensAsync(string refreshTokenValue, string ipAddress, string userAgent, string? deviceInfo = null);
+        Task<Result<TokenResponseDto>> RefreshTokensAsync(string refreshTokenValue, string ipAddress, string userAgent, string? deviceInfo);
+
+        /// <summary>
+        /// Asynchronously validates a provided refresh token, generates new tokens, revokes the old one (Token Rotation),
+        /// and stores the new refresh token information. Device information will be stored as null or default.
+        /// </summary>
+        /// <param name="refreshTokenValue">The opaque refresh token string provided by the client.</param>
+        /// <param name="ipAddress">The IP address of the client making the refresh request.</param>
+        /// <param name="userAgent">The user agent string of the client making the refresh request.</param>
+        /// <returns>
+        /// A <see cref="Task{TResult}"/> containing a <see cref="Result{T}"/> with a new <see cref="TokenResponseDto"/> if successful, or failure otherwise.
+        /// </returns>
+        Task<Result<TokenResponseDto>> RefreshTokensAsync(string refreshTokenValue, string ipAddress, string userAgent);
 
         /// <summary>
         /// Asynchronously revokes a specific refresh token stored in the database, marking it as invalid.
@@ -73,7 +93,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Interfaces.IServices
         /// <param name="refreshTokenValue">The opaque refresh token string.</param>
         /// <returns>
         /// A <see cref="Task{TResult}"/> representing the asynchronous operation, containing a
-        /// <see cref="Result{T}"/> which holds the session ID (<c>long</c>) if the token is found,
+        /// <see cref="Result{T}"/> which holds the session ID (<c>long</c>) if the token is found and active,
         /// or a failure result otherwise.
         /// </returns>
         Task<Result<long>> GetSessionIdFromTokenAsync(string refreshTokenValue);

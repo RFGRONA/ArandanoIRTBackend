@@ -25,20 +25,35 @@ namespace ArandanoIRT_Backend.Application.Interfaces.Auditing
         /// </summary>
         /// <param name="entry">The <see cref="EntityEntry"/> for the tracked entity.</param>
         /// <returns>The integer 'CropId' value, or <c>null</c> if the property doesn't exist, is not an integer, or its value is null.</returns>
-        int? GetCropIdValue(EntityEntry entry); 
+        int? GetCropIdValue(EntityEntry entry);
 
         /// <summary>
         /// Creates a dictionary mapping property names to their values from the provided <see cref="PropertyValues"/> object,
-        /// optionally excluding specified properties.
+        /// excluding a predefined set of sensitive properties (like 'Password').
         /// </summary>
         /// <param name="propertyValues">The <see cref="PropertyValues"/> object (e.g., OriginalValues, CurrentValues)
         /// containing the entity's property values. Can be <c>null</c>.</param>
-        /// <param name="excludedProperties">An optional collection of property names to exclude from the resulting dictionary.</param>
         /// <returns>
         /// A dictionary where keys are property names and values are the corresponding property values (as <c>object?</c>),
-        /// or <c>null</c> if <paramref name="propertyValues"/> is <c>null</c> or the resulting dictionary is empty.
+        /// excluding default sensitive properties. Returns <c>null</c> if <paramref name="propertyValues"/> is <c>null</c>
+        /// or the resulting dictionary is empty after exclusions.
         /// </returns>
-        IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues, IEnumerable<string>? excludedProperties = null); 
+        IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues); 
+
+        /// <summary>
+        /// Creates a dictionary mapping property names to their values from the provided <see cref="PropertyValues"/> object,
+        /// excluding both a predefined set of sensitive properties and any additionally specified properties.
+        /// </summary>
+        /// <param name="propertyValues">The <see cref="PropertyValues"/> object (e.g., OriginalValues, CurrentValues)
+        /// containing the entity's property values. Can be <c>null</c>.</param>
+        /// <param name="additionalExcludedProperties">An optional collection of additional property names to exclude from the resulting dictionary,
+        /// beyond the default exclusions. Can be <c>null</c> or empty.</param> // 
+        /// <returns>
+        /// A dictionary where keys are property names and values are the corresponding property values (as <c>object?</c>),
+        /// excluding default and specified properties. Returns <c>null</c> if <paramref name="propertyValues"/> is <c>null</c>
+        /// or the resulting dictionary is empty after exclusions.
+        /// </returns>
+        IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues, IEnumerable<string>? additionalExcludedProperties);
 
         /// <summary>
         /// Serializes the provided dictionary of property values into a string representation, typically JSON format.

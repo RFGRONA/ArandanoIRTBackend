@@ -149,22 +149,33 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         }
 
         /// <inheritdoc/>
+        // Implementation for the overload without additional excluded properties.
+        public IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues)
+        {
+            // This overload calls the more specific overload, passing null for the additional excluded properties.
+            // This maintains the original behavior where only default exclusions were applied if none were specified by the caller.
+            return GetValuesDictionary(propertyValues, null); // <<< Calls the other overload
+        }
+
+        /// <inheritdoc/>
         /// <remarks>
         /// Creates a dictionary of property names and their values from the provided <paramref name="propertyValues"/>.
         /// It excludes properties listed in the static <c>DefaultExcludedProperties</c> set (e.g., "Password")
-        /// and any additional properties specified in the optional <paramref name="excludedProperties"/> argument.
+        /// and any additional properties specified in the <paramref name="additionalExcludedProperties"/> argument.
         /// Returns <c>null</c> if the input <paramref name="propertyValues"/> is null or if the resulting dictionary is empty after exclusions.
         /// </remarks>
-        public IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues, IEnumerable<string>? excludedProperties = null)
+        public IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues, IEnumerable<string>? additionalExcludedProperties) // <<< Signature matches interface
         {
             if (propertyValues == null) return null;
 
-            // Combines default exclusions with specific ones if provided.
-            var allExcluded = DefaultExcludedProperties;
-            if (excludedProperties != null)
+            // Start with the default exclusions.
+            var finalExcludedProperties = DefaultExcludedProperties;
+            // If additional exclusions are provided and are not empty, combine them with the defaults.
+            if (additionalExcludedProperties != null && additionalExcludedProperties.Any())
             {
                 // Uses a HashSet for efficient O(1) lookups during exclusion checks.
-                allExcluded = new HashSet<string>(DefaultExcludedProperties.Concat(excludedProperties), StringComparer.OrdinalIgnoreCase);
+                // Create a new HashSet to avoid modifying the static DefaultExcludedProperties set.
+                finalExcludedProperties = new HashSet<string>(DefaultExcludedProperties.Concat(additionalExcludedProperties), StringComparer.OrdinalIgnoreCase);
             }
 
             var dictionary = new Dictionary<string, object?>();
@@ -172,7 +183,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             foreach (var property in propertyValues.Properties)
             {
                 // If the property name is not in the combined exclusion list...
-                if (!allExcluded.Contains(property.Name))
+                if (!finalExcludedProperties.Contains(property.Name))
                 {
                     // ...adds the property name and its value to the dictionary.
                     dictionary[property.Name] = propertyValues[property];
