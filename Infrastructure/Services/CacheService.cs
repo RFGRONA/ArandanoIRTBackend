@@ -27,7 +27,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         {
             // Retrieves the collection from the underlying IMemoryCache.
             // Explicitly returns null if the key is not found or the item is expired.
-            return _memoryCache.Get<IEnumerable<T>>(key) ?? null;
+            return _memoryCache.Get<IEnumerable<T>>(key);
         }
 
         /// <inheritdoc/>
