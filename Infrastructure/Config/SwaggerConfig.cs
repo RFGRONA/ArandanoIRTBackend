@@ -66,11 +66,22 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
                 options.OperationFilter<ProducesJsonFilter>(); // Sets JSON schema for 200 OK responses.
                 options.OperationFilter<AuthOperationFilter>(); // Adds security requirements for authorized actions.
 
-                // Configures Swashbuckle to include XML comments from the assembly's documentation file.
-                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                // Includes the XML comments found at the specified path.
-                options.IncludeXmlComments(xmlPath);
+                // Get the Assembly where SwaggerConfig is defined.
+                var currentAssembly = typeof(SwaggerConfig).Assembly;
+                var assemblyName = currentAssembly.GetName().Name;
+
+                if (!string.IsNullOrEmpty(assemblyName))
+                {
+                    var xmlFile = $"{assemblyName}.xml";
+                    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+                    // Check if the file exists before including to avoid warnings/errors.
+                    if (File.Exists(xmlPath))
+                    {
+                        // Includes the XML comments found at the specified path.
+                        options.IncludeXmlComments(xmlPath);
+                    }
+                }
             });
         }
     }
