@@ -75,7 +75,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 );
                 // Use reflection to set the navigation property on the domain entity.
                 var tableRelationProperty = typeof(StatusEntity).GetProperty(nameof(StatusEntity.TableRelation));
-                if (tableRelationProperty?.CanWrite ?? false)
+                if (tableRelationProperty?.CanWrite == true)
                 {
                     tableRelationProperty.SetValue(statusEntity, tableRelationEntity, null);
                 }
@@ -265,7 +265,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // --- Workaround: Update domain entity ID post-save ---
                 var idProperty = typeof(StatusEntity).GetProperty(nameof(StatusEntity.IdStatus));
-                if (idProperty?.CanWrite ?? false)
+                if (idProperty?.CanWrite == true)
                 {
                     idProperty.SetValue(entity, statusDbModel.Idstatus, null);
                 }

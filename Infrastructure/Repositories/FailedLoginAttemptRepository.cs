@@ -172,7 +172,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // --- Workaround: Update domain entity ID post-save ---
                 var idProperty = typeof(FailedLoginAttemptEntity).GetProperty(nameof(FailedLoginAttemptEntity.IdFailedLoginAttempt));
-                if (idProperty?.CanWrite ?? false)
+                if (idProperty?.CanWrite == true)
                 {
                     idProperty.SetValue(entity, dbModel.Idfailedloginattempt, null);
                 }

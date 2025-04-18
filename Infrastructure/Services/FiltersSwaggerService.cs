@@ -46,7 +46,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             // Checks if the action method or its declaring controller class has an attribute named "AuthorizeAttribute".
             var hasAuthorize = context.MethodInfo.DeclaringType?.GetCustomAttributes(true)
                                   .Union(context.MethodInfo.GetCustomAttributes(true))
-                                  .Any(attr => attr.GetType().Name == "AuthorizeAttribute") ?? false;
+                                  .Any(attr => attr.GetType().Name == "AuthorizeAttribute") == true;
 
             // If an Authorize attribute is found, add the 401 response if not already present.
             if (hasAuthorize)

@@ -232,7 +232,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     // --- Workaround: Update domain entity ID post-save ---
                     // Reflects the database-generated ID back onto the input domain entity.
                     var idProperty = typeof(ChangePasswordEntity).GetProperty(nameof(ChangePasswordEntity.IdChangePassword));
-                    if (idProperty?.CanWrite ?? false)
+                    if (idProperty?.CanWrite == true)
                     {
                         idProperty.SetValue(entity, dbModel.Idchangepassword, null);
                     }

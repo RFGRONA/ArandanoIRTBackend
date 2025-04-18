@@ -290,7 +290,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             {
                 _logger.LogWarning("Attempted refresh using inactive token {TokenId} (Session: {SessionId}). Reason: {Reason}", dbToken.IdRefreshToken, dbToken.Session, activityValidation.ErrorMessage);
                 // Map internal reasons to user-facing messages
-                string failureReason = activityValidation.ErrorMessage?.Contains("revoked") ?? false
+                string failureReason = activityValidation.ErrorMessage?.Contains("revoked") == true
                     ? "Session has been invalidated. Please log in again."
                     : "Session has expired. Please log in again.";
                 // Consider revoking other session tokens if one is revoked (requires separate logic)

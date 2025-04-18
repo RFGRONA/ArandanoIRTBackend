@@ -116,7 +116,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 {
                     // Logs the failure details provided by Cloudflare.
                     _logger.LogWarning("Cloudflare Turnstile verification failed. Success: {Success}, Errors: {Errors}",
-                                       turnstileResponse?.Success ?? false,
+                                       turnstileResponse?.Success == true,
                                        string.Join(", ", turnstileResponse?.ErrorCodes ?? [])); // Use empty list if ErrorCodes is null
                     // Returns a failure result including the error codes.
                     return Result.Failure($"CAPTCHA verification failed. Errors: {string.Join(", ", turnstileResponse?.ErrorCodes ?? ["unknown"])}"); // Provide default error if null

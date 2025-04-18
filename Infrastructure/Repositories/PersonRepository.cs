@@ -56,13 +56,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
             // Use reflection to set nullable timestamp properties on the domain entity.
             var updatedAtProperty = typeof(PersonEntity).GetProperty(nameof(PersonEntity.UpdatedAt));
-            if (updatedAtProperty?.CanWrite ?? false) updatedAtProperty.SetValue(personEntity, person.Updatedat, null);
+            if (updatedAtProperty?.CanWrite == true) updatedAtProperty.SetValue(personEntity, person.Updatedat, null);
 
             var lastLoginAtProperty = typeof(PersonEntity).GetProperty(nameof(PersonEntity.LastLoginAt));
-            if (lastLoginAtProperty?.CanWrite ?? false) lastLoginAtProperty.SetValue(personEntity, person.Lastloginat, null);
+            if (lastLoginAtProperty?.CanWrite == true) lastLoginAtProperty.SetValue(personEntity, person.Lastloginat, null);
 
             var lastPasswordChangeAtProperty = typeof(PersonEntity).GetProperty(nameof(PersonEntity.LastPasswordChangeAt));
-            if (lastPasswordChangeAtProperty?.CanWrite ?? false) lastPasswordChangeAtProperty.SetValue(personEntity, person.Lastpasswordchangeat, null);
+            if (lastPasswordChangeAtProperty?.CanWrite == true) lastPasswordChangeAtProperty.SetValue(personEntity, person.Lastpasswordchangeat, null);
 
             return personEntity;
         }
@@ -273,7 +273,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // --- Workaround: Update domain entity ID post-save ---
                 var idProperty = typeof(PersonEntity).GetProperty(nameof(PersonEntity.IdPerson));
-                if (idProperty?.CanWrite ?? false)
+                if (idProperty?.CanWrite == true)
                 {
                     idProperty.SetValue(entity, personDbModel.Idperson, null);
                 }

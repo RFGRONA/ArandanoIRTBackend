@@ -51,7 +51,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             );
             // Uses reflection to set the UpdatedAt property, as it's not in the domain entity constructor.
             var updatedAtProperty = typeof(CropEntity).GetProperty(nameof(CropEntity.UpdatedAt));
-            if (updatedAtProperty?.CanWrite ?? false)
+            if (updatedAtProperty?.CanWrite == true)
             {
                 updatedAtProperty.SetValue(cropEntity, crop.Updatedat, null);
             }
@@ -163,7 +163,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // --- Workaround: Update domain entity ID post-save ---
                 // Reflects the database-generated ID back onto the input domain entity.
                 var idProperty = typeof(CropEntity).GetProperty(nameof(CropEntity.IdCrop));
-                if (idProperty?.CanWrite ?? false)
+                if (idProperty?.CanWrite == true)
                 {
                     idProperty.SetValue(entity, cropDbModel.Idcrop, null);
                 }
