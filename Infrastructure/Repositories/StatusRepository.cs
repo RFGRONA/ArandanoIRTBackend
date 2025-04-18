@@ -383,7 +383,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx) // Handle DB errors (e.g., FK constraints).
             {
                 _logger.LogError($"Database error deleting status ID: {id} (check for related records): {dbEx.InnerException?.Message ?? dbEx.Message}");
-                return Result<bool>.Failure($"Database error deleting status (check for related records).");
+                return Result<bool>.Failure("Database error deleting status (check for related records).");
             }
             catch (Exception ex) // Handle general errors.
             {

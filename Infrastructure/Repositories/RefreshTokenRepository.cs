@@ -241,7 +241,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 _context.Refreshtoken.RemoveRange(tokensToDelete);
                 int rows = await _context.SaveChangesAsync();
                 // Check if all intended tokens were deleted.
-                return rows >= tokensToDelete.Count ? Result<bool>.Success(true) : Result<bool>.Failure($"Failed to delete all expired tokens.");
+                return rows >= tokensToDelete.Count ? Result<bool>.Success(true) : Result<bool>.Failure("Failed to delete all expired tokens.");
             }
             catch (DbUpdateException dbEx)
             {
@@ -263,7 +263,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Finds token by PK, no tracking.
                 var token = await _context.Refreshtoken.AsNoTracking().FirstOrDefaultAsync(t => t.Idrefreshtoken == id);
                 // Returns failure if not found.
-                if (token == null) return Result<RefreshTokenEntity>.Failure($"Refresh token with ID not found.");
+                if (token == null) return Result<RefreshTokenEntity>.Failure("Refresh token with ID not found.");
                 // Maps and returns success.
                 return Result<RefreshTokenEntity>.Success(MapToDomainEntity(token));
             }
