@@ -165,7 +165,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError("Error retrieving refresh token by token value: {Error}", ex.Message); 
-                return Result<RefreshTokenEntity>.Failure($"Error retrieving refresh token.");
+                return Result<RefreshTokenEntity>.Failure("Error retrieving refresh token.");
             }
         }
 
@@ -187,7 +187,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError("Error retrieving active refresh tokens for person ID {PersonId}: {Error}", personId, ex.Message); 
-                return Result<IEnumerable<RefreshTokenEntity>>.Failure($"Error retrieving active refresh tokens for person ID.");
+                return Result<IEnumerable<RefreshTokenEntity>>.Failure("Error retrieving active refresh tokens for person ID.");
             }
         }
 
@@ -218,7 +218,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError("Error deleting tokens by session {SessionId}: {Error}", sessionId, ex.Message); 
-                return Result<bool>.Failure($"Error deleting tokens by session.");
+                return Result<bool>.Failure("Error deleting tokens by session.");
             }
         }
 
@@ -287,7 +287,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError("Error retrieving all refresh tokens: {Error}", ex.Message); 
-                return Result<IEnumerable<RefreshTokenEntity>>.Failure($"Error retrieving all refresh tokens.");
+                return Result<IEnumerable<RefreshTokenEntity>>.Failure("Error retrieving all refresh tokens.");
             }
         }
 
@@ -330,7 +330,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError("Error creating refresh token: {Error}", ex.Message); 
-                return Result<RefreshTokenEntity>.Failure($"Error creating refresh token.");
+                return Result<RefreshTokenEntity>.Failure("Error creating refresh token.");
             }
         }
 
@@ -344,7 +344,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Finds existing entity (tracked).
                 var existing = await _context.Refreshtoken.FindAsync(entity.IdRefreshToken);
                 // Returns failure if not found.
-                if (existing == null) return Result<bool>.Failure($"Refresh token not found for update.");
+                if (existing == null) return Result<bool>.Failure("Refresh token not found for update.");
 
                 // Maps domain entity onto existing tracked entity.
                 MapToDbModel(entity, existing);
@@ -380,7 +380,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Finds entity by ID (tracked).
                 var token = await _context.Refreshtoken.FindAsync(id);
                 // Returns failure if not found.
-                if (token == null) return Result<bool>.Failure($"Refresh token not found for deletion.");
+                if (token == null) return Result<bool>.Failure("Refresh token not found for deletion.");
 
                 // Removes from context and saves.
                 _context.Refreshtoken.Remove(token);
@@ -391,12 +391,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx) // Handles DB deletion errors.
             {
                 _logger.LogError("DB error deleting refresh token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message); 
-                return Result<bool>.Failure($"DB error deleting refresh token.");
+                return Result<bool>.Failure("DB error deleting refresh token.");
             }
             catch (Exception ex) // Handles general errors.
             {
                 _logger.LogError("Error deleting refresh token: {Error}", ex.Message); 
-                return Result<bool>.Failure($"Error deleting refresh token.");
+                return Result<bool>.Failure("Error deleting refresh token.");
             }
         }
     }

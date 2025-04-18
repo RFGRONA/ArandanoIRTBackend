@@ -192,7 +192,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
 
                 // Return failure if not found in DB.
                 if (status == null)
-                    return Result<StatusEntity>.Failure($"Status not found.");
+                    return Result<StatusEntity>.Failure("Status not found.");
 
                 // Map and return success. (Do not cache single item retrieved this way).
                 return Result<StatusEntity>.Success(MapToDomainEntity(status));
@@ -200,7 +200,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex) // Handle potential database errors.
             {
                 _logger.LogError( $"Error retrieving status by ID {id}: {ex.Message}");
-                return Result<StatusEntity>.Failure($"Error retrieving status by ID.");
+                return Result<StatusEntity>.Failure("Error retrieving status by ID.");
             }
         }
 
@@ -238,7 +238,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex) // Handle potential database errors.
             {
                 _logger.LogError($"Error retrieving all statuses: {ex.Message}");
-                return Result<IEnumerable<StatusEntity>>.Failure($"Error retrieving all statuses.");
+                return Result<IEnumerable<StatusEntity>>.Failure("Error retrieving all statuses.");
             }
         }
 
@@ -280,12 +280,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx) // Handle DB errors.
             {
                 _logger.LogError($"Database error creating status. Entity: {@entity}, {dbEx.InnerException?.Message ?? dbEx.Message}");
-                return Result<StatusEntity>.Failure($"Database error creating status.");
+                return Result<StatusEntity>.Failure("Database error creating status.");
             }
             catch (Exception ex) // Handle general errors.
             {
                 _logger.LogError($"Database error creating status. Entity: {@entity}, {ex.InnerException?.Message ?? ex.Message}");
-                return Result<StatusEntity>.Failure($"Error creating status.");
+                return Result<StatusEntity>.Failure("Error creating status.");
             }
         }
 
@@ -333,17 +333,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateConcurrencyException ex) // Handle concurrency conflicts.
             {
                 _logger.LogWarning(ex, "Concurrency conflict updating status with ID {StatusId}", entity.IdStatus);
-                return Result<bool>.Failure($"Concurrency conflict updating status.");
+                return Result<bool>.Failure("Concurrency conflict updating status.");
             }
             catch (DbUpdateException dbEx) // Handle other DB update errors.
             {
                 _logger.LogError($"Database error updating status ID: {entity.IdStatus}. Entity: {@entity}. Message: {dbEx.InnerException?.Message ?? dbEx.Message}");
-                return Result<bool>.Failure($"Database error updating status.");
+                return Result<bool>.Failure("Database error updating status.");
             }
             catch (Exception ex) // Handle general errors.
             {
                 _logger.LogError($"Error updating status ID: {entity.IdStatus}. Entity: {entity}, {ex.Message}");
-                return Result<bool>.Failure($"Error updating status.");
+                return Result<bool>.Failure("Error updating status.");
             }
         }
 

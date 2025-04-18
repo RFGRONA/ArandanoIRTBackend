@@ -138,7 +138,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating tokens for User ID {UserId}, Session ID {SessionId}", person?.IdPerson, existingSessionId ?? -1);
-                return Result<TokenResponseDto>.Failure($"An unexpected error occurred while generating tokens.");
+                return Result<TokenResponseDto>.Failure("An unexpected error occurred while generating tokens.");
             }
         }
 
@@ -199,7 +199,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving session ID from refresh token.");
-                return Result<long>.Failure($"An unexpected error occurred while retrieving session info.");
+                return Result<long>.Failure("An unexpected error occurred while retrieving session info.");
             }
         }
 

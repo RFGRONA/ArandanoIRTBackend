@@ -113,19 +113,19 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Verifies if the number of affected rows matches the number of tokens intended for deletion.
                 return rowsAffected >= tokensToDelete.Count
                     ? Result<bool>.Success(true)
-                    : Result<bool>.Failure($"Failed to delete all reset tokens for person.");
+                    : Result<bool>.Failure("Failed to delete all reset tokens for person.");
             }
             catch (DbUpdateException dbEx)
             {
                 // Logs database-specific update errors.
                 _logger.LogError(dbEx, $"Database error deleting reset tokens for PersonId {personId}, {dbEx.InnerException?.Message ?? dbEx.Message}.");
-                return Result<bool>.Failure($"Database error deleting reset tokens.");
+                return Result<bool>.Failure("Database error deleting reset tokens.");
             }
             catch (Exception ex)
             {
                 // Logs general errors during the deletion process.
                 _logger.LogError(ex, $"Error deleting reset tokens for PersonId {personId}: {ex.Message}");
-                return Result<bool>.Failure($"Error deleting reset tokens for person.");
+                return Result<bool>.Failure("Error deleting reset tokens for person.");
             }
         }
 
@@ -137,7 +137,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Finds a token by its primary key using FindAsync (if tracked) or FirstOrDefaultAsync. Using AsNoTracking.
                 var token = await _context.Changepassword.AsNoTracking().FirstOrDefaultAsync(t => t.Idchangepassword == id);
                 // Returns failure if not found.
-                if (token == null) return Result<ChangePasswordEntity>.Failure($"Reset token not found.");
+                if (token == null) return Result<ChangePasswordEntity>.Failure("Reset token not found.");
                 // Maps and returns success if found.
                 return Result<ChangePasswordEntity>.Success(MapToDomainEntity(token));
             }
@@ -145,7 +145,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             {
                 // Logs errors during retrieval.
                 _logger.LogError(ex, $"Error retrieving reset token by ID {id}: {ex.Message}"); 
-                return Result<ChangePasswordEntity>.Failure($"Error retrieving reset token.");
+                return Result<ChangePasswordEntity>.Failure("Error retrieving reset token.");
             }
         }
 
@@ -163,7 +163,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             {
                 // Logs errors during retrieval.
                 _logger.LogError(ex, $"Error retrieving all reset tokens: {ex.Message}");
-                return Result<IEnumerable<ChangePasswordEntity>>.Failure($"Error retrieving all reset tokens.");
+                return Result<IEnumerable<ChangePasswordEntity>>.Failure("Error retrieving all reset tokens.");
             }
         }
 
@@ -273,7 +273,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     {
                         // Log message remains Spanish in code.
                         _logger.LogError(ex, "Transaction error creating reset token: {Error}", ex.Message);
-                        return Result<ChangePasswordEntity>.Failure($"Transaction error creating reset token.");
+                        return Result<ChangePasswordEntity>.Failure("Transaction error creating reset token.");
                     }
                 }
             }
@@ -289,7 +289,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 // Finds the existing database entity by ID. Uses FindAsync which tracks the entity.
                 var existing = await _context.Changepassword.FindAsync(entity.IdChangePassword);
                 // Returns failure if the entity to update is not found.
-                if (existing == null) return Result<bool>.Failure($"Reset token not found for update.");
+                if (existing == null) return Result<bool>.Failure("Reset token not found for update.");
 
                 // Maps properties from the domain entity onto the tracked database entity.
                 MapToDbModel(entity, existing);
@@ -315,7 +315,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex) // Handles general errors.
             {
                 _logger.LogError(ex, "Error updating reset token: {Error}", ex.Message); 
-                return Result<bool>.Failure($"Error updating reset token.");
+                return Result<bool>.Failure("Error updating reset token.");
             }
         }
 
@@ -339,12 +339,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx) // Handles database deletion errors.
             {
                 _logger.LogError(dbEx, "DB error deleting reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
-                return Result<bool>.Failure($"DB error deleting reset token.");
+                return Result<bool>.Failure("DB error deleting reset token.");
             }
             catch (Exception ex) // Handles general errors.
             {
                 _logger.LogError(ex, "Error deleting reset token: {Error}", ex.Message); 
-                return Result<bool>.Failure($"Error deleting reset token.");
+                return Result<bool>.Failure("Error deleting reset token.");
             }
         }
     }

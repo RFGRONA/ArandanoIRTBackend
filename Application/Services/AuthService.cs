@@ -568,7 +568,7 @@ namespace ArandanoIRT_Backend.Application.Services
             {
                 _logger.LogWarning("Invalid or expired password reset code used: {ChangeCode}. Error: {Error}", request.ChangeCode, tokenResult.ErrorMessage);
                 // Uses specific message for invalid/expired token.
-                return Result.Failure($"Password reset code is invalid or has expired. Please request a new one.");
+                return Result.Failure("Password reset code is invalid or has expired. Please request a new one.");
             }
             var validToken = tokenResult.Value; // Stores the valid token entity.
 
