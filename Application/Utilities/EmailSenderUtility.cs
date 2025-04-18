@@ -54,16 +54,15 @@ namespace ArandanoIRT_Backend.Application.Utilities
         /// </remarks>
         public void SendEmail(string destiny, string affair, string message)
         {
-            MailMessage email;
             try
             {
                 // Configures the email message object.
-                email = new MailMessage
+                MailMessage? email = new()
                 {
-                    From = new MailAddress(From, "Biokudi"), 
+                    From = new MailAddress(From, "Biokudi"),
                     Subject = affair,
                     Body = message,
-                    IsBodyHtml = true 
+                    IsBodyHtml = true
                 };
                 // Adds the recipient address.
                 email.To.Add(destiny);
