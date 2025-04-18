@@ -80,7 +80,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 .OfType<ProducesResponseTypeAttribute>()
                 .FirstOrDefault(a => a.StatusCode == StatusCodes.Status200OK);
 
-            if (produceResponseTypeAttribute != null && produceResponseTypeAttribute.Type != null)
+            if (produceResponseTypeAttribute is { Type: not null })
             {
                 // Uses the type specified in the attribute.
                 actualReturnType = produceResponseTypeAttribute.Type;
@@ -115,7 +115,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                     // Looks for [ProducesResponseType(200, Type = ...)] to determine the actual type.
                     var methodAttributes = context.MethodInfo.GetCustomAttributes<ProducesResponseTypeAttribute>();
                     var okResponseType = methodAttributes.FirstOrDefault(a => a.StatusCode == StatusCodes.Status200OK);
-                    if (okResponseType != null && okResponseType.Type != typeof(void)) // Ensure type is specified
+                    if (okResponseType is not null && okResponseType.Type != typeof(void)) // Ensure type is specified
                     {
                         actualReturnType = okResponseType.Type;
                     }

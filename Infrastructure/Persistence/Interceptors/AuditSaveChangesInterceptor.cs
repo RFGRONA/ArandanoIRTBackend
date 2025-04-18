@@ -133,7 +133,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
                         IEnumerable<object> generatedEntries = generator.GenerateEntries(entry, metadata);
 
                         // If entries were generated, add them to the master list.
-                        if (generatedEntries != null && generatedEntries.Any())
+                        if (generatedEntries?.Any() == true)
                         {
                             allAuditEntries.AddRange(generatedEntries); // Adds the generated entries.
                             _logger.LogDebug("Generated {Count} audit entries via {GeneratorType}",

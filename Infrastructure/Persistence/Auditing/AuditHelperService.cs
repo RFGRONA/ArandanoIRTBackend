@@ -171,7 +171,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             // Start with the default exclusions.
             var finalExcludedProperties = DefaultExcludedProperties;
             // If additional exclusions are provided and are not empty, combine them with the defaults.
-            if (additionalExcludedProperties != null && additionalExcludedProperties.Any())
+            if (additionalExcludedProperties?.Any() == true)
             {
                 // Uses a HashSet for efficient O(1) lookups during exclusion checks.
                 // Create a new HashSet to avoid modifying the static DefaultExcludedProperties set.
