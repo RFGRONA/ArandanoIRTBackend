@@ -90,7 +90,7 @@
             // Gets log files matching the specific pattern "log-" followed by 8 digits and ".txt".
             var files = Directory.GetFiles(logDirectory, "log-????????.txt");
             // Defines the age threshold for deletion (files older than 8 days).
-            var deleteThreshold = DateTime.Now.AddDays(-8);
+            var deleteThreshold = DateTime.UtcNow.AddDays(-8);
             int deletedCount = 0;
 
             // Iterates through the found log files.
