@@ -184,97 +184,95 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 return Result<ChangePasswordEntity>.Failure("Reset token entity cannot be null.");
 
             // Begins a database transaction to ensure atomicity.
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
+                // 1. Find existing tokens for the specified person within the transaction.
+                var tokensToDelete = await _context.Changepassword
+                                                  .Where(t => t.Personid == entity.PersonId)
+                                                  .ToListAsync(); // Materialize the list to avoid issues during RemoveRange.
+
+                // 2. Mark any existing tokens for deletion.
+                if (tokensToDelete.Any())
+                {
+                    _context.Changepassword.RemoveRange(tokensToDelete);
+                    _logger.LogInformation("Marked {Count} existing reset tokens for deletion for PersonId {PersonId}.", tokensToDelete.Count, entity.PersonId);
+                }
+
+                // 3. Map the input domain entity to the database model.
+                var dbModel = MapToDbModel(entity);
+                // Sets the creation timestamp if it's not already set (using default value check).
+                if (dbModel.Tokencreatedat == default)
+                {
+                    dbModel.Tokencreatedat = _dateTimeProvider.GetUtcNow();
+                }
+
+                // 4. Add the new token model to the DbContext.
+                await _context.Changepassword.AddAsync(dbModel);
+                _logger.LogInformation("Marked new reset token for addition for PersonId {PersonId}.", entity.PersonId);
+
+                // 5. Save all tracked changes (deletions and the new addition) atomically.
+                int affectedRows = await _context.SaveChangesAsync();
+                _logger.LogDebug("SaveChangesAsync completed within Create reset token transaction. Rows affected: {RowsAffected}", affectedRows);
+
+                // Optional check: Ensure at least the insert happened.
+                if (affectedRows == 0 && !tokensToDelete.Any()) // If nothing was deleted and nothing was inserted
+                {
+                    _logger.LogWarning("SaveChangesAsync reported 0 rows affected while creating reset token for PersonId {PersonId}, and no prior tokens were deleted.", entity.PersonId);
+                    // Rollback as the intended operation likely failed silently.
+                    await transaction.RollbackAsync();
+                    return Result<ChangePasswordEntity>.Failure("Failed to save new reset token.");
+                }
+
+                // 6. Commit the transaction as all operations succeeded.
+                await transaction.CommitAsync();
+                _logger.LogInformation("Transaction committed for Create reset token for PersonId {PersonId}.", entity.PersonId);
+
+                // --- Workaround: Update domain entity ID post-save ---
+                // Reflects the database-generated ID back onto the input domain entity.
+                var idProperty = typeof(ChangePasswordEntity).GetProperty(nameof(ChangePasswordEntity.IdChangePassword));
+                if (idProperty?.CanWrite == true)
+                {
+                    idProperty.SetValue(entity, dbModel.Idchangepassword, null);
+                }
+                else
+                {
+                    // Logs a warning if the ID could not be set back on the domain entity.
+                    _logger.LogWarning("Could not set IdChangePassword on domain entity after creation for PersonId {PersonId}.", entity.PersonId);
+                    // The returned 'entity' might have an incorrect ID (0) in this edge case.
+                }
+                // --- End Workaround ---
+
+                // Returns success with the potentially updated domain entity.
+                return Result<ChangePasswordEntity>.Success(entity);
+            }
+            catch (Exception ex) // Catches any exception during the transaction.
+            {
+                // If any error occurs, attempts to rollback the transaction.
+                _logger.LogError(ex, "Error occurred during Create reset token transaction for PersonId {PersonId}. Rolling back.", entity.PersonId);
                 try
                 {
-                    // 1. Find existing tokens for the specified person within the transaction.
-                    var tokensToDelete = await _context.Changepassword
-                                                      .Where(t => t.Personid == entity.PersonId)
-                                                      .ToListAsync(); // Materialize the list to avoid issues during RemoveRange.
-
-                    // 2. Mark any existing tokens for deletion.
-                    if (tokensToDelete.Any())
-                    {
-                        _context.Changepassword.RemoveRange(tokensToDelete);
-                        _logger.LogInformation("Marked {Count} existing reset tokens for deletion for PersonId {PersonId}.", tokensToDelete.Count, entity.PersonId);
-                    }
-
-                    // 3. Map the input domain entity to the database model.
-                    var dbModel = MapToDbModel(entity);
-                    // Sets the creation timestamp if it's not already set (using default value check).
-                    if (dbModel.Tokencreatedat == default)
-                    {
-                        dbModel.Tokencreatedat = _dateTimeProvider.GetUtcNow();
-                    }
-
-                    // 4. Add the new token model to the DbContext.
-                    await _context.Changepassword.AddAsync(dbModel);
-                    _logger.LogInformation("Marked new reset token for addition for PersonId {PersonId}.", entity.PersonId);
-
-                    // 5. Save all tracked changes (deletions and the new addition) atomically.
-                    int affectedRows = await _context.SaveChangesAsync();
-                    _logger.LogDebug("SaveChangesAsync completed within Create reset token transaction. Rows affected: {RowsAffected}", affectedRows);
-
-                    // Optional check: Ensure at least the insert happened.
-                    if (affectedRows == 0 && !tokensToDelete.Any()) // If nothing was deleted and nothing was inserted
-                    {
-                        _logger.LogWarning("SaveChangesAsync reported 0 rows affected while creating reset token for PersonId {PersonId}, and no prior tokens were deleted.", entity.PersonId);
-                        // Rollback as the intended operation likely failed silently.
-                        await transaction.RollbackAsync();
-                        return Result<ChangePasswordEntity>.Failure("Failed to save new reset token.");
-                    }
-
-                    // 6. Commit the transaction as all operations succeeded.
-                    await transaction.CommitAsync();
-                    _logger.LogInformation("Transaction committed for Create reset token for PersonId {PersonId}.", entity.PersonId);
-
-                    // --- Workaround: Update domain entity ID post-save ---
-                    // Reflects the database-generated ID back onto the input domain entity.
-                    var idProperty = typeof(ChangePasswordEntity).GetProperty(nameof(ChangePasswordEntity.IdChangePassword));
-                    if (idProperty?.CanWrite == true)
-                    {
-                        idProperty.SetValue(entity, dbModel.Idchangepassword, null);
-                    }
-                    else
-                    {
-                        // Logs a warning if the ID could not be set back on the domain entity.
-                        _logger.LogWarning("Could not set IdChangePassword on domain entity after creation for PersonId {PersonId}.", entity.PersonId);
-                        // The returned 'entity' might have an incorrect ID (0) in this edge case.
-                    }
-                    // --- End Workaround ---
-
-                    // Returns success with the potentially updated domain entity.
-                    return Result<ChangePasswordEntity>.Success(entity);
+                    await transaction.RollbackAsync();
                 }
-                catch (Exception ex) // Catches any exception during the transaction.
+                catch (Exception rbEx)
                 {
-                    // If any error occurs, attempts to rollback the transaction.
-                    _logger.LogError(ex, "Error occurred during Create reset token transaction for PersonId {PersonId}. Rolling back.", entity.PersonId);
-                    try
-                    {
-                        await transaction.RollbackAsync();
-                    }
-                    catch (Exception rbEx)
-                    {
-                        _logger.LogError(rbEx, "Error occurred during transaction rollback for PersonId {PersonId}.", entity.PersonId);
-                        // Log the rollback error, but the original exception is more relevant to return.
-                    }
+                    _logger.LogError(rbEx, "Error occurred during transaction rollback for PersonId {PersonId}.", entity.PersonId);
+                    // Log the rollback error, but the original exception is more relevant to return.
+                }
 
 
-                    // Logs and returns the specific error type and message.
-                    if (ex is DbUpdateException dbEx)
-                    {
-                        // Log message remains Spanish in code.
-                        _logger.LogError(dbEx, "DB transaction error creating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
-                        return Result<ChangePasswordEntity>.Failure("DB transaction error creating reset token.");
-                    }
-                    else
-                    {
-                        // Log message remains Spanish in code.
-                        _logger.LogError(ex, "Transaction error creating reset token: {Error}", ex.Message);
-                        return Result<ChangePasswordEntity>.Failure("Transaction error creating reset token.");
-                    }
+                // Logs and returns the specific error type and message.
+                if (ex is DbUpdateException dbEx)
+                {
+                    // Log message remains Spanish in code.
+                    _logger.LogError(dbEx, "DB transaction error creating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
+                    return Result<ChangePasswordEntity>.Failure("DB transaction error creating reset token.");
+                }
+                else
+                {
+                    // Log message remains Spanish in code.
+                    _logger.LogError(ex, "Transaction error creating reset token: {Error}", ex.Message);
+                    return Result<ChangePasswordEntity>.Failure("Transaction error creating reset token.");
                 }
             }
         }

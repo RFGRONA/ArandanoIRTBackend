@@ -2,7 +2,7 @@
 using System.Text;
 using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 
-namespace ArandanoIRT_Backend.Infrastructure.Utilities // Note: Changed namespace to Utilities based on previous context
+namespace ArandanoIRT_Backend.Infrastructure.Utilities 
 {
     /// <summary>
     /// Implements the <see cref="IRsaService"/> interface, providing functionalities
@@ -151,15 +151,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities // Note: Changed namespac
             // Converts the Base64 encoded input string back to a byte array.
             byte[] dataToDecrypt = Convert.FromBase64String(encryptedData);
             // Creates a new RSA instance for the decryption operation.
-            using (var rsa = RSA.Create())
-            {
-                // Imports the private key from the stored Base64 string (PKCS#8 format expected).
-                rsa.ImportRSAPrivateKey(Convert.FromBase64String(_rsaKeys.PrivateKey), out _);
-                // Decrypts the data using OAEP padding with SHA-256 hash algorithm.
-                byte[] decryptedData = rsa.Decrypt(dataToDecrypt, RSAEncryptionPadding.OaepSHA256);
-                // Converts the decrypted byte array back to a string using UTF-8 encoding.
-                return Encoding.UTF8.GetString(decryptedData);
-            }
+            using var rsa = RSA.Create();
+            // Imports the private key from the stored Base64 string (PKCS#8 format expected).
+            rsa.ImportRSAPrivateKey(Convert.FromBase64String(_rsaKeys.PrivateKey), out _);
+            // Decrypts the data using OAEP padding with SHA-256 hash algorithm.
+            byte[] decryptedData = rsa.Decrypt(dataToDecrypt, RSAEncryptionPadding.OaepSHA256);
+            // Converts the decrypted byte array back to a string using UTF-8 encoding.
+            return Encoding.UTF8.GetString(decryptedData);
         }
 
         /// <summary>

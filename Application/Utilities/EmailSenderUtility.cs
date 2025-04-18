@@ -103,22 +103,20 @@ namespace ArandanoIRT_Backend.Application.Utilities
                 byte[] fileBytes = Convert.FromBase64String(fileBase64);
 
                 // Creates the mail message using a 'using' statement for disposable resources.
-                using (MailMessage email = new(From, recipient, subject, message)) // Use configured 'From' address.
-                {
-                    email.IsBodyHtml = true; // Assumes message content is HTML.
+                using MailMessage email = new(From, recipient, subject, message); // Use configured 'From' address.
+                email.IsBodyHtml = true; // Assumes message content is HTML.
 
-                    // Creates a memory stream from the decoded file bytes using 'using'.
-                    using (MemoryStream ms = new(fileBytes))
-                    {
-                        // Creates the attachment, specifying PDF content type.
-                        Attachment attachment = new(ms, fileName, MediaTypeNames.Application.Pdf);
-                        // Adds the attachment to the email.
-                        email.Attachments.Add(attachment);
+                // Creates a memory stream from the decoded file bytes using 'using'.
+                using MemoryStream ms = new(fileBytes);
+                // Creates the attachment, specifying PDF content type.
+                Attachment attachment = new(ms, fileName, MediaTypeNames.Application.Pdf);
+                // Adds the attachment to the email.
+                email.Attachments.Add(attachment);
 
-                        // Attempts to send the email synchronously.
-                        client.Send(email);
-                    } // MemoryStream is disposed here.
-                } // MailMessage is disposed here.
+                // Attempts to send the email synchronously.
+                client.Send(email);
+                // MailMessage is disposed here.
+                // MemoryStream is disposed here.
             }
             catch (Exception ex)
             {
