@@ -56,10 +56,7 @@
                 return DeviceFamily;
             }
             // Ultimate fallback if no information is available.
-            else
-            {
-                return "Unknown Device";
-            }
+            return "Unknown Device";
         }
     }
 }
