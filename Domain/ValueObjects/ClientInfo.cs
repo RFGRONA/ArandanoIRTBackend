@@ -51,7 +51,7 @@
                 return osPart;
             }
             // Falls back to Device Family if Agent and OS are unknown.
-            else if (DeviceFamily != "Unknown Device")
+            if (DeviceFamily != "Unknown Device")
             {
                 return DeviceFamily;
             }
