@@ -17,9 +17,10 @@
         public string ThermalImageData { get; private set; }
 
         /// <summary>
-        /// Gets the corresponding RGB (standard color) image data, typically stored as a byte array.
+        /// Gets the corresponding RGB (standard color) image data as a read-only list of bytes.
+        /// Provides read-only access to prevent external modification of the internal array.
         /// </summary>
-        public byte[] RgbImageData { get; private set; }
+        public IReadOnlyList<byte> RgbImageData { get; private set; }
 
         /// <summary>
         /// Gets the date and time (usually UTC) when the image data was recorded or captured.
@@ -45,28 +46,25 @@
         /// <param name="recordedAt">The timestamp when the data was recorded.</param>
         /// <param name="plantId">The ID of the associated plant (nullable).</param>
         /// <param name="cropId">The ID of the associated crop (nullable).</param>
-        /// <exception cref="ArgumentException">
-        /// Thrown if <paramref name="thermalImageData"/> is null or whitespace (Spanish message: "Los datos de imagen térmica son requeridos.").
-        /// </exception>
-        /// <remarks>
-        /// Note: The constructor does not explicitly validate if <paramref name="rgbImageData"/> is null or empty.
-        /// </remarks>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="rgbImageData"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="thermalImageData"/> is null or whitespace.</exception>
         public ThermalDataEntity(
             int idThermalData,
             string thermalImageData,
-            byte[] rgbImageData,
+            byte[] rgbImageData, 
             DateTime recordedAt,
             int? plantId,
             int? cropId)
         {
             // Validates that thermal image data is provided.
             if (string.IsNullOrWhiteSpace(thermalImageData))
-                throw new ArgumentException("Los datos de imagen térmica son requeridos.", nameof(thermalImageData));
+                throw new ArgumentException("Thermal image data is required.", nameof(thermalImageData)); 
 
-            // Assigns parameters to the corresponding properties.
+            ArgumentNullException.ThrowIfNull(rgbImageData, nameof(rgbImageData));
+
             IdThermalData = idThermalData;
             ThermalImageData = thermalImageData;
-            RgbImageData = rgbImageData; 
+            RgbImageData = rgbImageData;
             RecordedAt = recordedAt;
             PlantId = plantId;
             CropId = cropId;
