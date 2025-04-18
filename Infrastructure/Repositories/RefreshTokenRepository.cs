@@ -126,11 +126,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     _logger.LogInformation("Successfully revoked {Count} refresh tokens for session ID {SessionId}.", rowsAffected, sessionId);
                     return Result<bool>.Success(true);
                 }
-                else
-                {
                     _logger.LogWarning("Revoked {RowsAffected} out of {ExpectedCount} tokens for session ID {SessionId}. Potential issue.", rowsAffected, tokensToRevoke.Count, sessionId);
                     return Result<bool>.Failure("Failed to revoke all expected tokens for session.");
-                }
             }
             catch (DbUpdateException dbEx) // Handle database update errors.
             {

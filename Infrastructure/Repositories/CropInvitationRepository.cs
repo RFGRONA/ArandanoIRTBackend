@@ -101,13 +101,10 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     _logger.LogInformation("Successfully marked invitation {InvitationId} as used by User ID {UserId}.", invitationId, userId);
                     return Result<bool>.Success(true);
                 }
-                else
-                {
-                    // Logs a warning if no rows were affected (e.g., concurrency issue or data didn't actually change).
-                    _logger.LogWarning("No rows affected when attempting to mark invitation {InvitationId} as used for User ID {UserId}.", invitationId, userId);
-                    // Failure seems more appropriate if an update was expected but didn't happen.
-                    return Result<bool>.Failure("Failed to update invitation status, possibly due to a concurrency issue or unchanged data.");
-                }
+                // Logs a warning if no rows were affected (e.g., concurrency issue or data didn't actually change).
+                _logger.LogWarning("No rows affected when attempting to mark invitation {InvitationId} as used for User ID {UserId}.", invitationId, userId);
+                // Failure seems more appropriate if an update was expected but didn't happen.
+                return Result<bool>.Failure("Failed to update invitation status, possibly due to a concurrency issue or unchanged data.");
             }
             catch (DbUpdateConcurrencyException concEx) 
             {
@@ -471,12 +468,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     _logger.LogInformation("Successfully updated invitation ID: {InvitationId}", entity.IdCropInvitation);
                     return Result<bool>.Success(true);
                 }
-                else
-                {
-                    // This isn't necessarily an error, could mean no changes were detected.
-                    _logger.LogInformation("No changes detected or saved for invitation ID: {InvitationId}. Entity data might be identical.", entity.IdCropInvitation);
-                    return Result<bool>.Success(false); 
-                }
+                // This isn't necessarily an error, could mean no changes were detected.
+                _logger.LogInformation("No changes detected or saved for invitation ID: {InvitationId}. Entity data might be identical.", entity.IdCropInvitation);
+                return Result<bool>.Success(false); 
             }
             catch (DbUpdateConcurrencyException ex)
             {
@@ -523,12 +517,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     _logger.LogInformation("Successfully deleted invitation ID: {InvitationId}", id);
                     return Result<bool>.Success(true);
                 }
-                else
-                {
-                    // This is unexpected if the entity was found and Remove was called.
-                    _logger.LogWarning("Failed to delete invitation ID (no rows affected after Remove call): {InvitationId}", id);
-                    return Result<bool>.Failure("Deletion failed unexpectedly after finding the entity.");
-                }
+                // This is unexpected if the entity was found and Remove was called.
+                _logger.LogWarning("Failed to delete invitation ID (no rows affected after Remove call): {InvitationId}", id);
+                return Result<bool>.Failure("Deletion failed unexpectedly after finding the entity.");
             }
             catch (DbUpdateException dbEx) 
             {

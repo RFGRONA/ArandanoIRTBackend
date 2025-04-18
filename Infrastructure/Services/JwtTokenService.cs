@@ -380,12 +380,10 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                                     dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1, reason, replacedByToken != null);
                 return Result.Success();
             }
-            else
-            {
-                _logger.LogError("Failed to update (revoke/replace) refresh token {TokenId} (Session: {SessionId}) for User ID {UserId}. Reason: {Reason}. Error: {Error}",
-                                 dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1, reason, updateResult.ErrorMessage);
-                return Result.Failure("Failed to update refresh token state due to a database error.");
-            }
+            
+            _logger.LogError("Failed to update (revoke/replace) refresh token {TokenId} (Session: {SessionId}) for User ID {UserId}. Reason: {Reason}. Error: {Error}",
+                                dbToken.IdRefreshToken, dbToken.Session, dbToken.PersonId ?? -1, reason, updateResult.ErrorMessage);
+            return Result.Failure("Failed to update refresh token state due to a database error.");
         }
 
 

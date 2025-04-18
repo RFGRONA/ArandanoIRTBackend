@@ -76,7 +76,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                 {
                     return intValue; // Returns the valid integer PK.
                 }
-                else if (pkValue != null) // Logs a warning if PK value is not null but also not an integer.
+                if (pkValue != null) // Logs a warning if PK value is not null but also not an integer.
                 {
                     // Log message remains Spanish in code.
                     _logger.LogWarning("PK '{PKName}' en tabla '{TableName}' no es de tipo INT. Valor: {PKValue}, Tipo: {PKType}",

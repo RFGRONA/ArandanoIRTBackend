@@ -476,13 +476,10 @@ namespace ArandanoIRT_Backend.UI.Controllers
                 // Return 200 OK with the success message from the service
                 return NoContent(); 
             }
-            else
-            {
-                // Log the failure reason provided by the service
-                _logger.LogWarning("Failed to process help request from {Email} for crop {CropName}. Error: {Error}", request.Email, request.CropName, result.ErrorMessage);
-                // Return 400 Bad Request with the error message from the service
-                return BadRequest(result.ErrorMessage);
-            }
+            // Log the failure reason provided by the service
+            _logger.LogWarning("Failed to process help request from {Email} for crop {CropName}. Error: {Error}", request.Email, request.CropName, result.ErrorMessage);
+            // Return 400 Bad Request with the error message from the service
+            return BadRequest(result.ErrorMessage);
         }
 
         /// <summary>

@@ -44,11 +44,11 @@
                 if (agentPart != "Unknown" && osPart != "Unknown OS")
                     return $"{agentPart} / {osPart}";
                 // Shows only Agent if OS is unknown.
-                else if (agentPart != "Unknown")
+                if (agentPart != "Unknown")
                     return agentPart;
                 // Shows only OS if Agent is unknown.
-                else // osPart != "Unknown OS"
-                    return osPart;
+                // osPart != "Unknown OS"
+                return osPart;
             }
             // Falls back to Device Family if Agent and OS are unknown.
             else if (DeviceFamily != "Unknown Device")

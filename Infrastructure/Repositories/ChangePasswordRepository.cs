@@ -268,12 +268,10 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                     _logger.LogError(dbEx, "DB transaction error creating reset token: {DbError}", dbEx.InnerException?.Message ?? dbEx.Message);
                     return Result<ChangePasswordEntity>.Failure("DB transaction error creating reset token.");
                 }
-                else
-                {
-                    // Log message remains Spanish in code.
-                    _logger.LogError(ex, "Transaction error creating reset token: {Error}", ex.Message);
-                    return Result<ChangePasswordEntity>.Failure("Transaction error creating reset token.");
-                }
+
+                // Logs any other unexpected error.
+                _logger.LogError(ex, "Transaction error creating reset token: {Error}", ex.Message);
+                return Result<ChangePasswordEntity>.Failure("Transaction error creating reset token.");
             }
         }
 
