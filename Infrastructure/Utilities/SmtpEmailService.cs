@@ -38,18 +38,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
 
             try
             {
-                // Wraps the synchronous _emailSender.SendEmail call in Task.Run to make the operation awaitable
-                // and conform to the asynchronous method signature of IEmailService.
-                // This prevents blocking the calling thread but still uses a thread pool thread for the synchronous work.
-                await Task.Run(() => _emailSender.SendEmail(to, subject, htmlBody));
-                _logger.LogInformation("Email sent successfully to {Email} with subject {Subject}", to, subject);
+                await _emailSender.SendEmailAsync(to, subject, htmlBody); 
                 return Result.Success();
-
-                // --- Alternative if SendEmail were async ---
-                // If EmailSenderUtility.SendEmail was modified to be asynchronous (e.g., using SmtpClient.SendMailAsync):
-                // await _emailSender.SendEmailAsync(to, subject, htmlBody); // Assumes SendEmailAsync exists
-                // return Result.Success();
-                // --- End Alternative ---
             }
             catch (Exception ex) // Catches exceptions from Task.Run or SendEmail.
             {
