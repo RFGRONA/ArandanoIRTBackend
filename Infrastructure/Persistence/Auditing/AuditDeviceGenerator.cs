@@ -51,19 +51,20 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             }
 
             // Creates the audit database entity instance ('Auditdevice').
-            var audit = new Auditdevice();
+            var audit = new Auditdevice
+            {
+                // Populates common audit metadata.
+                Performedat = metadata.PerformedAt,
+                Performedby = metadata.UserId,
+                Performedbyip = metadata.IpAddress,
+                Useragent = metadata.UserAgent,
 
-            // Populates common audit metadata.
-            audit.Performedat = metadata.PerformedAt;
-            audit.Performedby = metadata.UserId;
-            audit.Performedbyip = metadata.IpAddress;
-            audit.Useragent = metadata.UserAgent;
-
-            // Sets specific audit information for the device change.
-            audit.Columnname = "ALL"; // Sets column name to "ALL" for row-level auditing.
-            audit.Action = entry.State.ToString().ToUpperInvariant(); // Action based on entity state.
-            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0; // Gets the primary key of the Devicedata entity.
-            audit.Cropid = _auditHelper.GetCropIdValue(entry);       // Gets the CropId foreign key from the Devicedata entity.
+                // Sets specific audit information for the device change.
+                Columnname = "ALL", // Sets column name to "ALL" for row-level auditing.
+                Action = entry.State.ToString().ToUpperInvariant(), // Action based on entity state.
+                Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0, // Gets the primary key of the Devicedata entity.
+                Cropid = _auditHelper.GetCropIdValue(entry)       // Gets the CropId foreign key from the Devicedata entity.
+            };
 
             // Logs the generation attempt.
             _logger.LogInformation("Generating AuditDevice for Devicedata ID: {RecordId}, Action: {Action}",

@@ -60,20 +60,21 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             }
 
             // Creates the audit database entity instance ('Auditsystemtable').
-            var audit = new Auditsystemtable();
+            var audit = new Auditsystemtable
+            {
+                // Populates common audit metadata.
+                Performedat = metadata.PerformedAt,
+                Performedby = metadata.UserId,
+                Performedbyip = metadata.IpAddress,
+                Useragent = metadata.UserAgent,
 
-            // Populates common audit metadata.
-            audit.Performedat = metadata.PerformedAt;
-            audit.Performedby = metadata.UserId;
-            audit.Performedbyip = metadata.IpAddress;
-            audit.Useragent = metadata.UserAgent;
-
-            // Sets specific audit information for the system table change.
-            audit.Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name; // Gets table name.
-            audit.Columnname = "ALL"; // Sets column name to "ALL" for row-level auditing.
-            audit.Action = entry.State.ToString().ToUpperInvariant(); // Action based on entity state.
-            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0; // Retrieves the primary key of the affected record.
-            audit.Cropid = null; // Explicitly sets CropId to null for these "system" table audits.
+                // Sets specific audit information for the system table change.
+                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, // Gets table name.
+                Columnname = "ALL", // Sets column name to "ALL" for row-level auditing.
+                Action = entry.State.ToString().ToUpperInvariant(), // Action based on entity state.
+                Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0, // Retrieves the primary key of the affected record.
+                Cropid = null // Explicitly sets CropId to null for these "system" table audits.
+            };
 
             // Logs the generation attempt.
             _logger.LogInformation("Generating AuditSystemTable for {TableName} ID: {RecordId}, Action: {Action}",

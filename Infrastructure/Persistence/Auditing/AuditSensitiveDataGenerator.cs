@@ -56,24 +56,25 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             }
 
             // Creates the specific audit entity instance ('Auditsensitivedata').
-            var audit = new Auditsensitivedata();
+            var audit = new Auditsensitivedata
+            {
+                // Assigns common metadata.
+                Performedat = metadata.PerformedAt,
+                Performedby = metadata.UserId,
+                Performedbyip = metadata.IpAddress,
+                Useragent = metadata.UserAgent,
 
-            // Assigns common metadata.
-            audit.Performedat = metadata.PerformedAt;
-            audit.Performedby = metadata.UserId;
-            audit.Performedbyip = metadata.IpAddress;
-            audit.Useragent = metadata.UserAgent;
+                // Sets specific data for AuditSensitiveData.
+                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, // Name of the affected table.
+                Columnname = "ALL", // Indicates the action applies to the whole entity.
+                Action = entry.State.ToString().ToUpperInvariant(), // INSERT, UPDATE, DELETE.
 
-            // Sets specific data for AuditSensitiveData.
-            audit.Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name; // Name of the affected table.
-            audit.Columnname = "ALL"; // Indicates the action applies to the whole entity.
-            audit.Action = entry.State.ToString().ToUpperInvariant(); // INSERT, UPDATE, DELETE.
+                // Gets the ID of the affected record (PK) using the local helper.
+                Recordid = GetPrimaryKeyValue(entry),
 
-            // Gets the ID of the affected record (PK) using the local helper.
-            audit.Recordid = GetPrimaryKeyValue(entry);
-
-            // Attempts to get CropId if available directly on the entity using the local helper.
-            audit.Cropid = GetCropIdValue(entry); // Will be null if CropId property doesn't exist on the entity.
+                // Attempts to get CropId if available directly on the entity using the local helper.
+                Cropid = GetCropIdValue(entry) // Will be null if CropId property doesn't exist on the entity.
+            };
 
             // Logs the generation attempt.
             _logger.LogInformation("Generating AuditSensitiveData for {TableName} ID: {RecordId}, Action: {Action}",

@@ -59,20 +59,21 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             }
 
             // Creates the audit database entity instance ('Auditdatatable').
-            var audit = new Auditdatatable();
+            var audit = new Auditdatatable
+            {
+                // Populates common audit metadata.
+                Performedat = metadata.PerformedAt,
+                Performedby = metadata.UserId,
+                Performedbyip = metadata.IpAddress,
+                Useragent = metadata.UserAgent,
 
-            // Populates common audit metadata.
-            audit.Performedat = metadata.PerformedAt;
-            audit.Performedby = metadata.UserId;
-            audit.Performedbyip = metadata.IpAddress;
-            audit.Useragent = metadata.UserAgent;
-
-            // Sets table-specific audit information.
-            audit.Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name; // Gets table name from EF metadata or falls back to class name.
-            audit.Columnname = "ALL"; // Sets column name to "ALL" for row-level auditing.
-            audit.Action = entry.State.ToString().ToUpperInvariant(); // Action based on entity state (e.g., "ADDED", "MODIFIED", "DELETED").
-            audit.Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0; // Retrieves the primary key of the affected record.
-            audit.Cropid = _auditHelper.GetCropIdValue(entry); // Retrieves the associated CropId, if available.
+                // Sets table-specific audit information.
+                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, // Gets table name from EF metadata or falls back to class name.
+                Columnname = "ALL", // Sets column name to "ALL" for row-level auditing.
+                Action = entry.State.ToString().ToUpperInvariant(), // Action based on entity state (e.g., "ADDED", "MODIFIED", "DELETED").
+                Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0, // Retrieves the primary key of the affected record.
+                Cropid = _auditHelper.GetCropIdValue(entry) // Retrieves the associated CropId, if available.
+            };
 
             // Logs the generation attempt.
             _logger.LogInformation("Generating AuditDataTable for {TableName} ID: {RecordId}, Action: {Action}",
