@@ -21,7 +21,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// to be excluded by default during the serialization of entity values for auditing.
         /// </summary>
         // Common sensitive properties to exclude from serialization.
-        private static readonly HashSet<string> DefaultExcludedProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> DefaultExcludedProperties = new(StringComparer.OrdinalIgnoreCase)
         {
             nameof(Person.Password) // Excludes the password hash by default.
         };
@@ -31,7 +31,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// Configuration includes: no indentation, ignoring null values, handling cycles, and converting enums to strings.
         /// </summary>
         // Shared serialization options.
-        private static readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
+        private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {
             WriteIndented = false, // Disables pretty-printing for compactness.
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, // Omits null properties.

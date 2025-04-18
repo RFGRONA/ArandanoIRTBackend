@@ -9,7 +9,7 @@ namespace ArandanoIRT_Backend.Application.Utilities
     /// Provides static utility methods for validating email addresses,
     /// including syntax checks and DNS record verification (MX/A).
     /// </summary>
-    public static class EmailValidatorUtility
+    public static partial class EmailValidatorUtility
     {
         /// <summary>
         /// Compiled regular expression for validating the basic syntax of an email address.
@@ -17,10 +17,7 @@ namespace ArandanoIRT_Backend.Application.Utilities
         /// <remarks>
         /// This regex aims for a balance between RFC compliance and practical use cases.
         /// </remarks>
-        private static readonly Regex EmailRegex = new Regex(
-            @"^(?("")(""[^""]+?""@)|(([0-9a-zA-Z]((\.|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*[0-9a-zA-Z])?)@))" +
-            @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-zA-Z][-\w]*[0-9a-zA-Z]*\.)+[a-zA-Z]{2,}))$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex EmailRegex = MyRegex();
 
         /// <summary>
         /// Asynchronously validates an email address for correct syntax and checks for valid DNS (MX or A) records for its domain.
@@ -113,5 +110,8 @@ namespace ArandanoIRT_Backend.Application.Utilities
                 return Result.Failure("DNS lookup error: " + ex.Message);
             }
         }
+
+        [GeneratedRegex(@"^(?(")("[^"]+?"@)|(([0-9a-zA-Z]((\.|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*[0-9a-zA-Z])?)@))(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-zA-Z][-\w]*[0-9a-zA-Z]*\.)+[a-zA-Z]{2,}))$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "es-MX")]
+        private static partial Regex MyRegex();
     }
 }

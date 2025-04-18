@@ -14,7 +14,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
         /// <summary>
         /// Utility responsible for the actual SMTP sending logic.
         /// </summary>
-        private readonly EmailSenderUtility _emailSender = new EmailSenderUtility(configuration);
+        private readonly EmailSenderUtility _emailSender = new(configuration);
         /// <summary>
         /// Logger instance for logging email sending events.
         /// </summary>
