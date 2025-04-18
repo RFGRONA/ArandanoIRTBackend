@@ -67,7 +67,7 @@ namespace ArandanoIRT_Backend.UI.Middleware
 
             // Default status code for unhandled exceptions.
             var statusCode = HttpStatusCode.InternalServerError; // 500
-            string message; // User-facing error message.
+            string message = "An unexpected server error occurred.";
 
             // Determines the status code and user-facing message based on the exception type.
             switch (exception)

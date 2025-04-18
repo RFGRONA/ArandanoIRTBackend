@@ -81,7 +81,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 return Result.Failure($"Invalid email format: {request.AdminInfo.Email}. {emailValidation.ErrorMessage}");
             }
 
-            string decryptedPassword;
+            string decryptedPassword = string.Empty; 
             try
             {
                 // 2. Decrypts the provided password.
@@ -118,7 +118,7 @@ namespace ArandanoIRT_Backend.Application.Services
             var now = _dateTimeProvider.GetUtcNow();
 
             // 6. Creates the CropEntity using mapping.
-            CropEntity cropEntity;
+            CropEntity? cropEntity = null; 
             try
             {
                 cropEntity = request.ToCropEntity(now); // Uses the mapping extension method.
@@ -139,7 +139,7 @@ namespace ArandanoIRT_Backend.Application.Services
             var savedCrop = createCropResult.Value; // Gets the entity with the assigned ID.
 
             // 8. Creates the PersonEntity using mapping and sets remaining properties.
-            PersonEntity personEntity;
+            PersonEntity? personEntity = null; 
             try
             {
                 // Uses mapping, creating an entity with IsAdmin=true.
@@ -236,7 +236,7 @@ namespace ArandanoIRT_Backend.Application.Services
             }
             var validInvitation = invitationResult.Value; // Stores the valid invitation entity.
 
-            string decryptedPassword;
+            string decryptedPassword = string.Empty; 
             try
             {
                 // 3. Decrypts the provided password.
@@ -270,7 +270,7 @@ namespace ArandanoIRT_Backend.Application.Services
             var now = _dateTimeProvider.GetUtcNow();
 
             // 7. Creates the PersonEntity using mapping.
-            PersonEntity personEntity;
+            PersonEntity? personEntity = null;
             try
             {
                 // Uses mapping, passing the CropId from the validated invitation (creates entity with IsAdmin=false).
@@ -371,7 +371,7 @@ namespace ArandanoIRT_Backend.Application.Services
             var timeThreshold = _dateTimeProvider.GetUtcNow().Subtract(failedAttemptWindow);
             var now = _dateTimeProvider.GetUtcNow();
 
-            string decryptedPassword;
+            string decryptedPassword = string.Empty;
             try
             {
                 // 4. Decrypts the provided password.
@@ -477,7 +477,7 @@ namespace ArandanoIRT_Backend.Application.Services
             var person = personResult.Value;
 
             // 3. Generates a secure password reset token.
-            string resetToken;
+            string resetToken = string.Empty;
             try
             {
                 // Uses 8 bytes -> ~11 Base64Url chars (secure, reasonably short for copy-paste).
@@ -544,7 +544,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 return Result.Failure("New password and confirmation password do not match.");
             }
 
-            string decryptedPassword;
+            string decryptedPassword = string.Empty;
             try
             {
                 // Decrypts the new password.
@@ -710,7 +710,7 @@ namespace ArandanoIRT_Backend.Application.Services
             var administrator = adminResult.Value;
 
             // 4. Generate the email body
-            string emailBody;
+            string emailBody = string.Empty;
             try
             {
                 emailBody = _emailService.GenerateHelpRequestBody(request);

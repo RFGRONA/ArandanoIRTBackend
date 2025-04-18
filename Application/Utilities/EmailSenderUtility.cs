@@ -24,16 +24,13 @@ namespace ArandanoIRT_Backend.Application.Utilities
         /// <exception cref="FormatException">Thrown if the SMTP Port configuration value is not a valid integer.</exception>
         public EmailSenderUtility(IConfiguration configuration)
         {
-            string Host;
-            int Port;
-            string Password;
 
             // Reads SMTP configuration values, throwing if any are missing.
-            Host = configuration["Smtp:Host"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:Host configuration is missing.");
-            Port = int.Parse(configuration["Smtp:Port"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:Port configuration is missing."));
+            string Host = configuration["Smtp:Host"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:Host configuration is missing.");
+            int Port = int.Parse(configuration["Smtp:Port"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:Port configuration is missing."));
             User = configuration["Smtp:User"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:User configuration is missing.");
             From = configuration["Smtp:From"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:From configuration is missing.");
-            Password = configuration["Smtp:Password"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:Password configuration is missing.");
+            string Password = configuration["Smtp:Password"] ?? throw new ArgumentNullException(nameof(configuration), "Smtp:Password configuration is missing.");
 
             // Initializes the SmtpClient instance.
             client = new SmtpClient(Host, Port)
