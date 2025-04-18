@@ -481,7 +481,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             using var rng = RandomNumberGenerator.Create();
             var randomBytes = new byte[byteLength];
             rng.GetBytes(randomBytes);
-            return Base64UrlEncoder.Encode(randomBytes); // URL-safe, no padding
+            return Base64UrlEncoder.Encode(randomBytes);
         }
     }
 }
