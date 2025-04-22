@@ -1,0 +1,6 @@
+projectKey=ArandanoIRTBackend
+serverUrl=http://localhost:9000
+serverVersion=25.4.0.105899
+dashboardUrl=http://localhost:9000/dashboard?id=ArandanoIRTBackend
+ceTaskId=938ed7f5-497a-4594-af5a-9dbb54202562
+ceTaskUrl=http://localhost:9000/api/ce/task?id=938ed7f5-497a-4594-af5a-9dbb54202562
