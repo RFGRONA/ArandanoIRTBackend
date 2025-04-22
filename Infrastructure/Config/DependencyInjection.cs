@@ -1,6 +1,8 @@
 ﻿using ArandanoIRT_Backend.Application.Interfaces.Auditing;
-using ArandanoIRT_Backend.Application.Interfaces.Services;
+using ArandanoIRT_Backend.Application.Interfaces.IServices;
 using ArandanoIRT_Backend.Application.Interfaces.Utilities;
+using ArandanoIRT_Backend.Application.Services;
+using ArandanoIRT_Backend.Application.Utilities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Infrastructure.Filters;
 using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
@@ -8,7 +10,6 @@ using ArandanoIRT_Backend.Infrastructure.Persistence.Auditing;
 using ArandanoIRT_Backend.Infrastructure.Repositories;
 using ArandanoIRT_Backend.Infrastructure.Services;
 using ArandanoIRT_Backend.Infrastructure.Utilities;
-using ApplicationServices = ArandanoIRT_Backend.Application.Services;
 
 namespace ArandanoIRT_Backend.Infrastructure.Config
 {
@@ -69,7 +70,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             services.AddSingleton<IRsaService, RsaService>(); 
             services.AddScoped<IEmailService, SmtpEmailService>(); 
             services.AddSingleton<IUserAgentParser, UAParserAdapter>(); 
-            services.AddScoped<IRequestContextAccessor, RequestContextAccessor>(); 
+            services.AddScoped<IRequestContextAccessor, RequestContextAccessor>();
+            services.AddScoped<IAuthUtilities, AuthUtilities>();
 
             // --- Infrastructure Layer: Auditing ---
             // Registers auditing helper service and multiple generators for different audit types.
@@ -84,7 +86,10 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
 
             // --- Application Layer: Services ---
             // Registers application-level services, mapping interfaces to implementations.
-            services.AddScoped<IAuthService, ApplicationServices.AuthService>(); 
+            services.AddScoped<IHelpRequestService, HelpRequestService>();
+            services.AddScoped<IAuthRegistrationService, AuthRegistrationService>();
+            services.AddScoped<IAuthPasswordService, AuthPasswordService>();
+            services.AddScoped<IAuthSessionService, AuthSessionService>();
         }
     }
 }
