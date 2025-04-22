@@ -114,9 +114,13 @@
         {
 
             if (string.IsNullOrEmpty(description))
-                throw new ArgumentException("La descripción no puede ser nula o vacía.", nameof(description));
+            {
+                throw new ArgumentException("The description cannot be null or empty.", nameof(description));
+            }
             if (subjectiveRating < 1 || subjectiveRating > 3)
-                throw new ArgumentOutOfRangeException(nameof(subjectiveRating), "La calificación subjetiva debe estar entre 1 y 3.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(subjectiveRating), "The subjective rating must be between 1 and 3.");
+            }
 
             // Assigns parameters to the corresponding properties.
             IdObservation = idObservation;

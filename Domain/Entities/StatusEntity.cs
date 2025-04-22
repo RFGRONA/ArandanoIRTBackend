@@ -45,7 +45,9 @@
         {
             // Validates the status name.
             if (string.IsNullOrWhiteSpace(nameStatus))
-                throw new ArgumentException("El nombre del status es requerido.", nameof(nameStatus));
+            { 
+                throw new ArgumentException("The status name is required.", nameof(nameStatus)); 
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdStatus = idStatus;

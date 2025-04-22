@@ -66,11 +66,17 @@
         {
             // Validates required string fields.
             if (string.IsNullOrWhiteSpace(nameCrop))
-                throw new ArgumentException("El nombre del cultivo es requerido.", nameof(nameCrop));
+            {
+                throw new ArgumentException("The crop name is required.", nameof(nameCrop));
+            }
             if (string.IsNullOrWhiteSpace(addressCrop))
-                throw new ArgumentException("La dirección es requerida.", nameof(addressCrop));
+            {
+                throw new ArgumentException("The address is required.", nameof(addressCrop));
+            }
             if (string.IsNullOrWhiteSpace(cityName))
-                throw new ArgumentException("El nombre de la ciudad es requerido.", nameof(cityName));
+            {
+                throw new ArgumentException("The city name is required.", nameof(cityName));
+            }
 
             IdCrop = idCrop;
             NameCrop = nameCrop;

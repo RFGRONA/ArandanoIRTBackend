@@ -80,9 +80,13 @@
         {
             // Validates sensor reading ranges.
             if (humidity < 0 || humidity > 100)
-                throw new ArgumentOutOfRangeException(nameof(humidity), "La humedad debe estar entre 0 y 100.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(humidity), "Humidity must be between 0 and 100.");
+            }
             if (lightIntensity < 0)
-                throw new ArgumentOutOfRangeException(nameof(lightIntensity), "La intensidad de la luz no puede ser negativa.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(lightIntensity), "Light intensity cannot be negative.");
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdSensorData = idSensorData;

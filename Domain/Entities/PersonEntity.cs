@@ -99,11 +99,13 @@
         {
             // Validates required name fields.
             if (string.IsNullOrWhiteSpace(firstName))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("El nombre es requerido.", nameof(firstName));
+            {
+                throw new ArgumentException("First name is required.", nameof(firstName));
+            }
             if (string.IsNullOrWhiteSpace(lastName))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("El apellido es requerido.", nameof(lastName));
+            {
+                throw new ArgumentException("Last name is required.", nameof(lastName));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdPerson = idPerson;

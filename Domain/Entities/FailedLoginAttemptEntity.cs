@@ -60,11 +60,17 @@
         {
             // Validates that required string fields identifying the attempt context are provided.
             if (string.IsNullOrWhiteSpace(ipAddress))
-                throw new ArgumentException("La dirección IP es requerida.", nameof(ipAddress));
+            {
+                throw new ArgumentException("The IP address is required.", nameof(ipAddress));
+            }
             if (string.IsNullOrWhiteSpace(deviceInfo))
-                throw new ArgumentException("La información del dispositivo es requerida.", nameof(deviceInfo));
+            {
+                throw new ArgumentException("The device information is required.", nameof(deviceInfo));
+            }
             if (string.IsNullOrWhiteSpace(userAgent))
-                throw new ArgumentException("El user agent es requerido.", nameof(userAgent));
+            {
+                throw new ArgumentException("The user agent is required.", nameof(userAgent));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdFailedLoginAttempt = idFailedLoginAttempt;

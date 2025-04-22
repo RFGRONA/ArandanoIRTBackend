@@ -87,9 +87,13 @@
         {
             // Validates that required token strings are provided.
             if (string.IsNullOrWhiteSpace(token))
-                throw new ArgumentException("El token es requerido.", nameof(token));
+            {
+                throw new ArgumentException("The token is required.", nameof(token));
+            }
             if (string.IsNullOrWhiteSpace(refreshToken))
-                throw new ArgumentException("El refresh token es requerido.", nameof(refreshToken));
+            {
+                throw new ArgumentException("The refresh token is required.", nameof(refreshToken));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdDeviceToken = idDeviceToken;

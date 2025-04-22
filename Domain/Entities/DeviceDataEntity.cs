@@ -91,8 +91,9 @@
             int? plantId)
         {
             // Validates that the data collection time is not negative.
-            if (dataCollectionTime < 0)
-                throw new ArgumentOutOfRangeException(nameof(dataCollectionTime), "El tiempo de recolección no puede ser negativo.");
+            if (dataCollectionTime < 0){
+                throw new ArgumentOutOfRangeException(nameof(dataCollectionTime), "Collection time cannot be negative.");
+            }
 
             // Assigns parameters to the corresponding properties.
             IdDeviceData = idDeviceData;

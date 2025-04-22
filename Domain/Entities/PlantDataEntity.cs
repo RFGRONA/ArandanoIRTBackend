@@ -59,7 +59,9 @@
         {
             // Validates that the plant name is provided.
             if (string.IsNullOrWhiteSpace(namePlant))
-                throw new ArgumentException("El nombre de la planta es requerido.", nameof(namePlant));
+            {
+                throw new ArgumentException("The plant name is required.", nameof(namePlant));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdPlantState = idPlantState;
