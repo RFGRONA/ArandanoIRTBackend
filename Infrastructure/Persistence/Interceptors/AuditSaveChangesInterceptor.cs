@@ -13,10 +13,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
     /// </summary>
     public class AuditSaveChangesInterceptor : SaveChangesInterceptor
     {
-        // Injected services necessary for auditing.
         private readonly IRequestContextAccessor _requestContextAccessor;
         private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly IEnumerable<IAuditEntryGenerator> _auditGenerators; // Collection of all registered audit generators.
+        private readonly IEnumerable<IAuditEntryGenerator> _auditGenerators;
         private readonly ILogger<AuditSaveChangesInterceptor> _logger;
 
         /// <summary>
@@ -30,12 +29,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
         public AuditSaveChangesInterceptor(
             IRequestContextAccessor requestContextAccessor,
             IDateTimeProvider dateTimeProvider,
-            IEnumerable<IAuditEntryGenerator> auditGenerators, // Injects the collection of generators.
+            IEnumerable<IAuditEntryGenerator> auditGenerators,
             ILogger<AuditSaveChangesInterceptor> logger)
         {
             _requestContextAccessor = requestContextAccessor ?? throw new ArgumentNullException(nameof(requestContextAccessor));
             _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
-            _auditGenerators = auditGenerators ?? throw new ArgumentNullException(nameof(auditGenerators)); // Stores the collection.
+            _auditGenerators = auditGenerators ?? throw new ArgumentNullException(nameof(auditGenerators));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -49,35 +48,52 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
         /// <param name="cancellationToken">A token to cancel the operation.</param>
         /// <returns>A <see cref="ValueTask{TResult}"/> representing the asynchronous operation, containing the possibly modified interception result.</returns>
         /// <remarks>
-        /// The workflow is:
-        /// 1. Get common audit metadata (user, IP, time) once.
-        /// 2. Iterate through tracked entity entries.
-        /// 3. Skip unchanged, detached, or audit entities.
-        /// 4. Find the appropriate <see cref="IAuditEntryGenerator"/> for the entity type.
-        /// 5. Generate audit entry/entries using the generator.
-        /// 6. Collect all generated audit entries.
-        /// 7. Add collected audit entries to the DbContext's change tracker.
-        /// 8. Continue with the original SaveChanges operation.
+        /// Refactored workflow:
+        /// 1. Get DbContext.
+        /// 2. Get common audit metadata via helper.
+        /// 3. Generate all audit entries for tracked changes via helper.
+        /// 4. Add generated entries to the DbContext if any exist.
+        /// 5. Continue with the original SaveChanges operation.
         /// </remarks>
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData,
             InterceptionResult<int> result,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken) // Removed '= default'
         {
             var context = eventData.Context;
-            // Checks if the DbContext is available.
             if (context == null)
             {
                 // Log message remains Spanish in code.
-                _logger.LogWarning("DbContext es null en AuditSaveChangesInterceptor. No se puede auditar.");
+                _logger.LogWarning("DbContext is null in AuditSaveChangesInterceptor. Cannot audit.");
+                // Use await before calling base async method
                 return await base.SavingChangesAsync(eventData, result, cancellationToken);
             }
 
-            // List to accumulate all audit entries generated during this SaveChanges call.
-            var allAuditEntries = new List<object>();
+            // Get metadata (extracted logic)
+            var metadata = GetAuditMetadata();
 
-            // Get common audit metadata ONCE per SaveChanges call.
-            // Uses try/catch in case the accessor fails (though unlikely if configured correctly).
+            // Generate entries (extracted logic)
+            var allAuditEntries = GenerateAuditEntriesForChanges(context, metadata);
+
+            // Add generated entries to the context if any were created
+            if (allAuditEntries.Any())
+            {
+                _logger.LogInformation("Adding {AuditCount} total audit entries to the DbContext.", allAuditEntries.Count);
+                // Use await with AddRangeAsync
+                await context.AddRangeAsync(allAuditEntries, cancellationToken);
+            }
+
+            // Continue with the original SaveChanges operation
+            // Use await before calling base async method
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        /// <summary>
+        /// Retrieves common audit metadata (User ID, IP, User Agent, Timestamp).
+        /// </summary>
+        /// <returns>An <see cref="AuditMetadata"/> object.</returns>
+        private AuditMetadata GetAuditMetadata()
+        {
             int? userId = null;
             string? ipAddress = null;
             string? userAgent = null;
@@ -89,26 +105,35 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
             }
             catch (Exception ex)
             {
-                // Logs error obtaining context.
                 _logger.LogError(ex, "Error getting context data for audit.");
-                // Decides whether to continue without context data or throw; currently continues with nulls/unknown.
-                ipAddress ??= "Unknown";
-                userAgent ??= "Unknown";
+                // Continue with nulls/unknown for metadata, logging handled it.
+                ipAddress ??= "Unknown"; // Assign Unknown if still null
+                userAgent ??= "Unknown"; // Assign Unknown if still null
             }
 
-            // Gets the current timestamp.
             var performedAt = _dateTimeProvider.GetUtcNow();
-            // Creates the metadata object.
             var metadata = new AuditMetadata(userId, ipAddress, userAgent, performedAt);
 
-            // Logs the common metadata retrieved.
-            _logger.LogInformation("Audit Interceptor: User={UserId}, IP={IP}, Agent={UserAgent}, Time={PerformedAt}",
+            _logger.LogInformation("Audit Interceptor Metadata: User={UserId}, IP={IP}, Agent={UserAgent}, Time={PerformedAt}",
                                    metadata.UserId ?? -1, metadata.IpAddress, metadata.UserAgent, metadata.PerformedAt);
 
-            // Iterate over entities tracked by EF Core's ChangeTracker.
+            return metadata;
+        }
+
+        /// <summary>
+        /// Generates a list of audit entry objects based on the changes tracked in the DbContext.
+        /// </summary>
+        /// <param name="context">The DbContext containing the tracked changes.</param>
+        /// <param name="metadata">The common audit metadata.</param>
+        /// <returns>A list of generated audit entry objects.</returns>
+        private List<object> GenerateAuditEntriesForChanges(DbContext context, AuditMetadata metadata)
+        {
+            var allAuditEntries = new List<object>();
+
+            // Iterate over tracked entries
             foreach (var entry in context.ChangeTracker.Entries())
             {
-                // Ignore detached, unchanged entities, or audit entities themselves to prevent infinite loops.
+                // Filter out irrelevant entries
                 if (entry.State == EntityState.Detached ||
                     entry.State == EntityState.Unchanged ||
                     IsAuditEntity(entry.Entity))
@@ -116,46 +141,36 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
                     continue;
                 }
 
-                // Logs processing attempt.
                 _logger.LogInformation("Processing entity for auditing: {EntityName}, State: {State}",
                                        entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, entry.State);
 
-                // Find the appropriate generator and generate entries.
+                // Find the first generator that can handle this entity type
                 foreach (var generator in _auditGenerators)
                 {
-                    // Checks if the current generator can handle this entity type.
                     if (generator.CanHandle(entry))
                     {
                         _logger.LogDebug("Generator {GeneratorType} will handle entity {EntityType}",
                                          generator.GetType().Name, entry.Entity.GetType().Name);
 
-                        // Calls the generator to create audit entries.
+                        // Generate entries using the found generator
                         IEnumerable<object> generatedEntries = generator.GenerateEntries(entry, metadata);
 
-                        // If entries were generated, add them to the master list.
+                        // Add generated entries (if any) to the list
                         if (generatedEntries?.Any() == true)
                         {
-                            allAuditEntries.AddRange(generatedEntries); // Adds the generated entries.
+                            allAuditEntries.AddRange(generatedEntries);
                             _logger.LogDebug("Generated {Count} audit entries via {GeneratorType}",
                                              generatedEntries.Count(), generator.GetType().Name);
                         }
-                        // Assumes only one generator handles each entity type (breaks after first match).
+                        // Assume only one generator per entity type, break inner loop
                         break;
                     }
-                }
-            } // End of foreach (entry).
+                } // End foreach generator
+            } // End foreach entry
 
-            // If any audit entries were generated, add them to the DbContext to be saved.
-            if (allAuditEntries.Any())
-            {
-                _logger.LogInformation("Adding {AuditCount} total audit entries to the DbContext.", allAuditEntries.Count);
-                // Adds the audit entries to the context's change tracker asynchronously.
-                await context.AddRangeAsync(allAuditEntries, cancellationToken);
-            }
-
-            // Continues with the original SaveChanges operation (which will now include saving the audit entries).
-            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+            return allAuditEntries;
         }
+
 
         /// <summary>
         /// Helper method to determine if a given entity object is one of the known audit log entity types.

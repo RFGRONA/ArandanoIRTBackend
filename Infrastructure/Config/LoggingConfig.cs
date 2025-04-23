@@ -71,8 +71,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
                     {
                         { "service.name", serviceName }
                     };
-                    // Protocol can be specified if needed, defaults often work (e.g., Grpc).
-                    // options.Protocol = OtlpProtocol.Grpc;
                 })
                 // Creates the logger instance based on the configuration.
                 .CreateLogger();

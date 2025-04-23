@@ -39,7 +39,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             // Handles only the specified entity types.
             return entry.Entity is Plantstatehistory ||
                    entry.Entity is Plantobservation;
-            // Does NOT include Status, TableRelation, FailedLoginAttempt, DeviceLog
         }
 
         /// <inheritdoc/>
@@ -51,39 +50,54 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// </remarks>
         public IEnumerable<object> GenerateEntries(EntityEntry entry, AuditMetadata metadata)
         {
-            // Safety check for type (although CanHandle should prevent incorrect types).
-            if (entry.Entity is not Plantstatehistory &&
-                entry.Entity is not Plantobservation)
+            // Safety check for type
+            if (!(entry.Entity is Plantstatehistory || entry.Entity is Plantobservation))
             {
                 _logger.LogWarning("AuditSystemTableGenerator potentially called with unexpected type (check logic): {EntityType}", entry.Entity.GetType().Name);
                 return Enumerable.Empty<object>();
             }
 
-            // Creates the audit database entity instance ('Auditsystemtable').
+            // Create the base audit entity instance
             var audit = new Auditsystemtable
             {
-                // Populates common audit metadata.
+                // Common metadata
                 Performedat = metadata.PerformedAt,
                 Performedby = metadata.UserId,
                 Performedbyip = metadata.IpAddress,
                 Useragent = metadata.UserAgent,
 
-                // Sets specific audit information for the system table change.
-                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, // Gets table name.
-                Columnname = "ALL", // Sets column name to "ALL" for row-level auditing.
-                Action = entry.State.ToString().ToUpperInvariant(), // Action based on entity state.
-                Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0, // Retrieves the primary key of the affected record.
-                Cropid = null // Explicitly sets CropId to null for these "system" table audits.
+                // Specific audit info
+                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
+                Columnname = "ALL",
+                Action = entry.State.ToString().ToUpperInvariant(),
+                Recordid = _auditHelper.GetPrimaryKeyValue(entry) ?? 0, // Get PK early
+                Cropid = null // Explicitly null for system tables
             };
 
-            // Logs the generation attempt.
             _logger.LogInformation("Generating AuditSystemTable for {TableName} ID: {RecordId}, Action: {Action}",
                                    audit.Tablename, audit.Recordid, audit.Action);
 
-            // Exclude properties if necessary (unlikely here).
-            // IEnumerable<string>? excludedProps = null;
+            // Populate OldValue and NewValue using the helper method
+            if (!TryPopulateAuditValues(audit, entry))
+            {
+                // Helper returned false, likely due to unexpected state - already logged by helper.
+                return Enumerable.Empty<object>();
+            }
 
-            // Populates OldValue and NewValue based on the entity state.
+            // Return the populated audit entry
+            return new List<object> { audit };
+        }
+
+        /// <summary>
+        /// Populates the OldValue and NewValue properties of the audit entry based on the entity state.
+        /// </summary>
+        /// <param name="audit">The <see cref="Auditsystemtable"/> object to populate.</param>
+        /// <param name="entry">The <see cref="EntityEntry"/> containing the changes.</param>
+        /// <returns>True if values were populated successfully, false if the entity state was unexpected.</returns>
+        private bool TryPopulateAuditValues(Auditsystemtable audit, EntityEntry entry)
+        {
+            // Note: Excluded properties parameter is commented out in original, kept same here.
+            // Consider adding `IEnumerable<string>? excludedProps = null` if needed.
             switch (entry.State)
             {
                 case EntityState.Added:
@@ -91,36 +105,34 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                     audit.Newvalue = _auditHelper.SerializePropertyValueDictionary(
                                          _auditHelper.GetValuesDictionary(entry.CurrentValues /*, excludedProps */)
                                      );
-                    audit.Recordid = 0; // ID does not exist yet for added entities.
-                    break;
+                    // Override RecordId for Added entities as it's not available yet from DB
+                    audit.Recordid = 0;
+                    return true;
 
                 case EntityState.Deleted:
                     audit.Oldvalue = _auditHelper.SerializePropertyValueDictionary(
-                                        _auditHelper.GetValuesDictionary(entry.OriginalValues /*, excludedProps */)
+                                         _auditHelper.GetValuesDictionary(entry.OriginalValues /*, excludedProps */)
                                      );
                     audit.Newvalue = null;
-                    // RecordId was already obtained using the helper.
-                    break;
+                    // RecordId was already obtained when 'audit' was created
+                    return true;
 
                 case EntityState.Modified:
                     audit.Oldvalue = _auditHelper.SerializePropertyValueDictionary(
-                                        _auditHelper.GetValuesDictionary(entry.OriginalValues /*, excludedProps */)
+                                         _auditHelper.GetValuesDictionary(entry.OriginalValues /*, excludedProps */)
                                      );
                     audit.Newvalue = _auditHelper.SerializePropertyValueDictionary(
                                          _auditHelper.GetValuesDictionary(entry.CurrentValues /*, excludedProps */)
                                      );
-                    // RecordId was already obtained using the helper.
-                    break;
+                    // RecordId was already obtained when 'audit' was created
+                    return true;
 
                 default:
                     // Logs a warning for unexpected entity states.
                     _logger.LogWarning("Unexpected entity state {EntityState} detected for {TableName} ID: {RecordId} in AuditSystemTableGenerator.",
                                        entry.State, audit.Tablename, audit.Recordid);
-                    return Enumerable.Empty<object>(); // Does not generate an audit entry.
+                    return false; // Indicate failure/unexpected state
             }
-
-            // Returns a list containing the single generated audit entry object.
-            return new List<object> { audit };
         }
     }
 }

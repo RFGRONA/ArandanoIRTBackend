@@ -70,9 +70,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             _logger.LogInformation("Generating AuditDevice for Devicedata ID: {RecordId}, Action: {Action}",
                                    audit.Recordid, audit.Action);
 
-            // Exclude properties if necessary (unlikely for row-level device audit).
-            // IEnumerable<string>? excludedProps = null;
-
             // Populates OldValue and NewValue based on the entity state.
             switch (entry.State)
             {

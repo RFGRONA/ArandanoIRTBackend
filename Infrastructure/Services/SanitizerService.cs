@@ -27,9 +27,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             // --- Configuration: Remove ALL HTML Tags ---
             // Clears the list of allowed tags, effectively disallowing all HTML elements.
             _sanitizer.AllowedTags.Clear();
-            // Clear allowed attributes and CSS properties as well for stricter sanitization:
-            // _sanitizer.AllowedAttributes.Clear();
-            // _sanitizer.AllowedCssProperties.Clear();
             // --- End Configuration ---
         }
 

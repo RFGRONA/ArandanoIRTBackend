@@ -475,8 +475,6 @@ namespace ArandanoIRT_Backend.Application.Services
                 string emailBody = _emailService.GenerateWelcomeBody(person.FirstName);
                 // Send email
                 await _emailService.SendEmailAsync(person.Email, "Welcome to Arandano IRT!", emailBody);
-                // Log success (optional, can be verbose)
-                // _logger.LogInformation("Welcome email sent successfully to {Email}", person.Email);
             }
             catch (Exception ex)
             {

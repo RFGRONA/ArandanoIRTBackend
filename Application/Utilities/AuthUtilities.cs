@@ -31,9 +31,9 @@ namespace ArandanoIRT_Backend.Application.Utilities
         /// <inheritdoc/>
         public async Task<Result<PersonEntity>> FindUserByEmailAsync(string email)
         {
-            // Validate input email format (optional but good practice here too)
-            // var emailValidation = await EmailValidatorUtility.ValidateEmailAsync(email);
-            // if(emailValidation.IsFailure) return Result<PersonEntity>.Failure($"Invalid email format: {email}");
+            // Validate input email format
+            var emailValidation = await EmailValidatorUtility.ValidateEmailAsync(email);
+            if(emailValidation.IsFailure) return Result<PersonEntity>.Failure($"Invalid email format: {email}");
 
             // Attempt to retrieve user by email from the repository
             var personResult = await _personRepository.GetByEmailAsync(email);

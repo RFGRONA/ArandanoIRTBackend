@@ -16,28 +16,28 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
     {
         private readonly ILogger<AuditHelperService> _logger;
 
+        // Assume Person class definition exists for nameof(Person.Password)
+        public class Person { public string? Password { get; set; } }
+
         /// <summary>
         /// Defines a set of common sensitive property names (case-insensitive)
         /// to be excluded by default during the serialization of entity values for auditing.
         /// </summary>
-        // Common sensitive properties to exclude from serialization.
         private static readonly HashSet<string> DefaultExcludedProperties = new(StringComparer.OrdinalIgnoreCase)
         {
-            nameof(Person.Password) // Excludes the password hash by default.
+             nameof(Person.Password) // Excludes the password hash by default.
         };
 
         /// <summary>
         /// Shared, pre-configured JSON serializer options optimized for audit logging.
         /// Configuration includes: no indentation, ignoring null values, handling cycles, and converting enums to strings.
         /// </summary>
-        // Shared serialization options.
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {
-            WriteIndented = false, // Disables pretty-printing for compactness.
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, // Omits null properties.
-            ReferenceHandler = ReferenceHandler.IgnoreCycles, // Prevents errors with circular references in object graphs.
-            Converters = { new JsonStringEnumConverter() } // Serializes enums as strings instead of numbers.
-            // Consider Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping; // If specific character encoding is needed (e.g., avoid escaping '+' etc.)
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            Converters = { new JsonStringEnumConverter() }
         };
 
         /// <summary>
@@ -57,62 +57,88 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// It logs warnings and returns <c>null</c> if no PK is found, if the PK is composite, if the PK property is not an <see cref="int"/>,
         /// or if the PK value cannot be determined.
         /// </remarks>
-        public int? GetPrimaryKeyValue(EntityEntry entry) 
+        public int? GetPrimaryKeyValue(EntityEntry entry)
         {
-            // Finds the primary key definition for the entity.
             var primaryKey = entry.Metadata.FindPrimaryKey();
 
-            // Handles single-property primary keys.
-            if (primaryKey != null && primaryKey.Properties.Count == 1)
+            // Guard Clause 1: No Primary Key found
+            if (primaryKey == null)
             {
-                var pkProperty = primaryKey.Properties.First();
-                // Prioritizes CurrentValue, but uses OriginalValue as fallback for Deleted state.
-                var pkValue = entry.State == EntityState.Deleted
-                                ? entry.Property(pkProperty.Name)?.OriginalValue
-                                : entry.Property(pkProperty.Name)?.CurrentValue;
-
-                // Checks if the retrieved value is an integer.
-                if (pkValue is int intValue)
-                {
-                    return intValue; // Returns the valid integer PK.
-                }
-                if (pkValue != null) // Logs a warning if PK value is not null but also not an integer.
-                {
-                    // Log message remains Spanish in code.
-                    _logger.LogWarning("PK '{PKName}' en tabla '{TableName}' no es de tipo INT. Valor: {PKValue}, Tipo: {PKType}",
-                                       pkProperty.Name, entry.Metadata.GetTableName() ?? "<Unknown>", pkValue, pkValue.GetType().Name);
-                }
-
-                // Tries OriginalValue if CurrentValue was null and state is not Deleted.
-                if (entry.State != EntityState.Deleted)
-                {
-                    pkValue = entry.Property(pkProperty.Name)?.OriginalValue;
-                    if (pkValue is int intValueOrig)
-                    {
-                        return intValueOrig; // Returns the valid integer PK from original value.
-                    }
-                }
-                // If reached here after checking CurrentValue and OriginalValue, it's not a valid int PK.
-            }
-            // Logs warnings for missing or composite primary keys.
-            else if (primaryKey == null)
-            {
-                // Log message remains Spanish in code.
-                _logger.LogWarning("No se encontró Primary Key para la entidad tipo '{EntityType}' en tabla '{TableName}'.",
-                                   entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
-            }
-            else // Handles composite primary key case.
-            {
-                // Log message remains Spanish in code.
-                _logger.LogWarning("La entidad tipo '{EntityType}' en tabla '{TableName}' tiene una PK compuesta, no soportado por GetPrimaryKeyValue simple.",
-                                   entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
+                LogWarningMissingPrimaryKey(entry);
+                return null;
             }
 
-            // Returns null as the default value if an integer PK could not be retrieved.
-            _logger.LogWarning("Returning null PK for entity type '{EntityType}' in table '{TableName}' with state {EntityState}.",
-                               entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>", entry.State);
-            return null; 
+            // Guard Clause 2: Composite Primary Key found
+            if (primaryKey.Properties.Count != 1)
+            {
+                LogWarningCompositePrimaryKey(entry);
+                return null;
+            }
+
+            // --- We know we have a single primary key property here ---
+            var pkProperty = primaryKey.Properties.First();
+            var pkPropertyEntry = entry.Property(pkProperty.Name);
+
+            // Determine the value to check first (Current, unless state is Deleted)
+            bool useOriginalFirst = entry.State == EntityState.Deleted;
+            object? primaryValue = useOriginalFirst
+                                     ? pkPropertyEntry?.OriginalValue
+                                     : pkPropertyEntry?.CurrentValue;
+
+            // Check if the primary value is a valid integer
+            if (primaryValue is int intValue)
+            {
+                return intValue; // Found valid PK int value
+            }
+
+            // Log if the primary value exists but is not an integer
+            if (primaryValue != null)
+            {
+                LogWarningPrimaryKeyNotInt(entry, pkProperty.Name, primaryValue);
+            }
+
+            // --- Fallback Check: Try the other value (Original if Current was tried, impossible if Original was tried first) ---
+            // Only attempt fallback if the state is not Deleted (meaning we tried CurrentValue first)
+            if (!useOriginalFirst) // Equivalent to entry.State != EntityState.Deleted
+            {
+                object? originalValue = pkPropertyEntry?.OriginalValue;
+                if (originalValue is int originalIntValue)
+                {
+                    return originalIntValue; // Found valid PK int value in OriginalValue
+                }
+            }
+
+            // If we reached here, no valid integer PK could be determined
+            LogWarningReturningNullPrimaryKey(entry);
+            return null;
         }
+
+        // --- Private Logging Helper Methods ---
+
+        private void LogWarningMissingPrimaryKey(EntityEntry entry)
+        {
+            _logger.LogWarning("Primary Key not found for entity type '{EntityType}' in table '{TableName}'.",
+            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
+        }
+
+        private void LogWarningCompositePrimaryKey(EntityEntry entry)
+        {
+            _logger.LogWarning("Entity type '{EntityType}' in table '{TableName}' has a composite PK, not supported by simple GetPrimaryKeyValue.",
+            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
+        }
+
+        private void LogWarningPrimaryKeyNotInt(EntityEntry entry, string pkName, object pkValue)
+        {
+            _logger.LogWarning("PK '{PKName}' in table '{TableName}' is not of type INT. Value: {PKValue}, Type: {PKType}",
+            pkName, entry.Metadata.GetTableName() ?? "<Unknown>", pkValue, pkValue.GetType().Name);
+        }
+
+        private void LogWarningReturningNullPrimaryKey(EntityEntry entry)
+        {
+            _logger.LogWarning("Returning null PK for entity type '{EntityType}' in table '{TableName}' with state {EntityState}.",
+            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>", entry.State);
+        }
+
 
         /// <inheritdoc/>
         /// <remarks>
@@ -128,33 +154,22 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
 
             if (cropIdProp != null)
             {
-                // Prioritizes CurrentValue, uses OriginalValue as fallback for Deleted state.
-                var value = entry.State == EntityState.Deleted ? cropIdProp.OriginalValue : cropIdProp.CurrentValue;
+                // Prioritizes CurrentValue, uses OriginalValue as fallback for Deleted state OR if Current is null.
+                var value = (entry.State == EntityState.Deleted) ? cropIdProp.OriginalValue : (cropIdProp.CurrentValue ?? cropIdProp.OriginalValue);
+
                 if (value is int cropId)
                 {
                     return cropId;
                 }
-                // Tries OriginalValue if CurrentValue was null and state is not Deleted.
-                if (entry.State != EntityState.Deleted)
-                {
-                    value = cropIdProp.OriginalValue;
-                    if (value is int originalCropId) return originalCropId;
-                }
             }
 
-            // Could attempt searching navigation properties if strictly necessary,
-            // but complex logic or lazy loading in interceptors is best avoided.
-            // _logger.LogDebug("Propiedad CropId no encontrada directamente en {EntityType}.", entry.Entity.GetType().Name);
             return null; // Returns null if CropId property not found or value is not an int.
         }
 
         /// <inheritdoc/>
-        // Implementation for the overload without additional excluded properties.
         public IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues)
         {
-            // This overload calls the more specific overload, passing null for the additional excluded properties.
-            // This maintains the original behavior where only default exclusions were applied if none were specified by the caller.
-            return GetValuesDictionary(propertyValues, null); // <<< Calls the other overload
+            return GetValuesDictionary(propertyValues, null); // Calls the overload
         }
 
         /// <inheritdoc/>
@@ -164,33 +179,27 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// and any additional properties specified in the <paramref name="additionalExcludedProperties"/> argument.
         /// Returns <c>null</c> if the input <paramref name="propertyValues"/> is null or if the resulting dictionary is empty after exclusions.
         /// </remarks>
-        public IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues, IEnumerable<string>? additionalExcludedProperties) // <<< Signature matches interface
+        public IDictionary<string, object?>? GetValuesDictionary(PropertyValues? propertyValues, IEnumerable<string>? additionalExcludedProperties)
         {
             if (propertyValues == null) return null;
 
-            // Start with the default exclusions.
+            // Determine the final set of properties to exclude
             var finalExcludedProperties = DefaultExcludedProperties;
-            // If additional exclusions are provided and are not empty, combine them with the defaults.
             if (additionalExcludedProperties?.Any() == true)
             {
-                // Uses a HashSet for efficient O(1) lookups during exclusion checks.
-                // Create a new HashSet to avoid modifying the static DefaultExcludedProperties set.
+                // Combine default and additional exclusions efficiently using HashSet
                 finalExcludedProperties = new HashSet<string>(DefaultExcludedProperties.Concat(additionalExcludedProperties), StringComparer.OrdinalIgnoreCase);
             }
 
             var dictionary = new Dictionary<string, object?>();
-            // Iterates through all properties in the PropertyValues collection.
             foreach (var property in propertyValues.Properties)
             {
-                // If the property name is not in the combined exclusion list...
                 if (!finalExcludedProperties.Contains(property.Name))
                 {
-                    // ...adds the property name and its value to the dictionary.
                     dictionary[property.Name] = propertyValues[property];
                 }
             }
 
-            // Returns the dictionary only if it contains any entries after exclusions, otherwise null.
             return dictionary.Any() ? dictionary : null;
         }
 
@@ -202,7 +211,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// </remarks>
         public string? SerializePropertyValueDictionary(IDictionary<string, object?>? values)
         {
-            // Returns null if the input dictionary is null or empty.
             if (values == null || !values.Any())
             {
                 return null;
@@ -210,14 +218,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
 
             try
             {
-                // Serializes the dictionary using the statically defined options.
                 return JsonSerializer.Serialize(values, _jsonSerializerOptions);
             }
-            catch (Exception ex) // Catches potential serialization errors.
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error serializing property dictionary for auditing.");
-                // Returns a placeholder string indicating the error.
-                return $"<Error serializing values: {ex.Message}>"; // Error message in English for consistency
+                return $"<Error serializing values: {ex.Message}>";
             }
         }
     }

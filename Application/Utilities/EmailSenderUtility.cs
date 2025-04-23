@@ -157,7 +157,7 @@ namespace ArandanoIRT_Backend.Application.Utilities
                 }
 
                 // Decode Base64 (consider TryParse if base64 source is unreliable)
-                byte[] fileBytes = [];
+                byte[] fileBytes;
                 try
                 {
                     fileBytes = Convert.FromBase64String(fileBase64);
