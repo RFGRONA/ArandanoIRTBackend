@@ -139,41 +139,39 @@ namespace ArandanoIRT_Backend.UI.Controllers
         /// Implements token rotation (new access/refresh pair generated, old refresh token revoked).
         /// If the original token came from a cookie, cookies are updated. Otherwise, new tokens are returned in the body.
         /// </remarks>
+        /// <param name="xRefreshToken" >(Optional) The refresh token passed via the 'X-Refresh-Token' header.</param>
         /// <returns>New access and refresh tokens.</returns>
         /// <response code="200">Tokens refreshed successfully. Returns TokenResponseDto.</response>
         /// <response code="400">Invalid request (e.g., refresh token missing).</response>
         /// <response code="401">Unauthorized (refresh token invalid, expired, or revoked).</response>
         /// <response code="500">Internal error (e.g., failed to renew cookies).</response>
         [HttpPost("refresh-token")]
-        [AllowAnonymous] 
+        [AllowAnonymous]
         [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> RefreshToken()
+        // Added the parameter with [FromHeader] attribute
+        public async Task<IActionResult> RefreshToken([FromHeader(Name = "X-Refresh-Token")] string? xRefreshToken)
         {
             string? refreshTokenValue = null;
             string tokenSource = "unknown";
 
             // 1. Try reading from Cookie
+            // Assuming _cookiesService needs HttpContext
             refreshTokenValue = _cookiesService.GetRefreshToken(HttpContext);
             if (!string.IsNullOrEmpty(refreshTokenValue))
             {
                 tokenSource = "cookie";
                 _logger.LogDebug("Refresh token found in cookie for refresh request.");
             }
-            else
+            // 2. Try reading from Header parameter (populated by model binding)
+            // Check the model-bound parameter 'xRefreshToken'
+            else if (!string.IsNullOrEmpty(xRefreshToken))
             {
-                // 2. Try reading from Header if not in cookie
-                if (Request.Headers.TryGetValue("X-Refresh-Token", out StringValues headerValues))
-                {
-                    refreshTokenValue = headerValues.FirstOrDefault();
-                    if (!string.IsNullOrEmpty(refreshTokenValue))
-                    {
-                        tokenSource = "header";
-                        _logger.LogDebug("Refresh token found in X-Refresh-Token header for refresh request.");
-                    }
-                }
+                refreshTokenValue = xRefreshToken;
+                tokenSource = "header";
+                _logger.LogDebug("Refresh token found in X-Refresh-Token header for refresh request.");
             }
 
             // 3. Validate token presence
@@ -184,9 +182,10 @@ namespace ArandanoIRT_Backend.UI.Controllers
             }
 
             // --- Proceed with refresh ---
-            string ipAddress = _requestContextAccessor.GetIpAddress();
-            string userAgent = _requestContextAccessor.GetUserAgent();
-            string deviceInfo = _requestContextAccessor.GetFormattedDeviceInfo();
+            // Assuming _requestContextAccessor provides these methods
+            string ipAddress = _requestContextAccessor.GetIpAddress() ?? "Unknown";
+            string userAgent = _requestContextAccessor.GetUserAgent() ?? "Unknown";
+            string deviceInfo = _requestContextAccessor.GetFormattedDeviceInfo() ?? "Unknown";
 
             // Call the session service to refresh tokens
             var result = await _sessionService.RefreshTokenAsync(refreshTokenValue, ipAddress, userAgent, deviceInfo);
@@ -194,8 +193,8 @@ namespace ArandanoIRT_Backend.UI.Controllers
             // Handle refresh failure (Unauthorized)
             if (result.IsFailure)
             {
-                // Always attempt to remove cookies if refresh fails, regardless of source
                 _logger.LogWarning("Refresh token validation failed (Source: {TokenSource}). Attempting to clear auth cookies. Error: {Error}", tokenSource, result.ErrorMessage);
+                // Assuming _cookiesService needs HttpContext
                 _cookiesService.RemoveCookies(HttpContext);
                 return Unauthorized(result.ErrorMessage); // 401 Unauthorized
             }
@@ -209,17 +208,16 @@ namespace ArandanoIRT_Backend.UI.Controllers
                 try
                 {
                     _logger.LogInformation("Renewing auth cookies after successful token refresh (source: cookie).");
-                    // Use Renew which likely removes old and sets new ones
+                    // Assuming _cookiesService needs HttpContext and token strings
                     _cookiesService.RenewAuthCookies(HttpContext, tokenResponse.AccessToken, tokenResponse.RefreshToken);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to set/renew auth cookies after successful token refresh (source: cookie).");
-                    // Return 500 if cookie renewal fails for web clients
                     return StatusCode(StatusCodes.Status500InternalServerError, "Token refreshed successfully, but failed to update session cookies.");
                 }
             }
-            else // tokenSource == "header" or "unknown" (though validation should prevent unknown reaching here)
+            else // tokenSource == "header"
             {
                 _logger.LogInformation("Token refresh successful (Source: {TokenSource}). Returning new tokens in response body.", tokenSource);
                 // Do not set cookies if request came from header
@@ -228,7 +226,6 @@ namespace ArandanoIRT_Backend.UI.Controllers
             // Always return the new tokens in the response body
             return Ok(tokenResponse);
         }
-
 
         /// <summary>
         /// Logs out the current user session.

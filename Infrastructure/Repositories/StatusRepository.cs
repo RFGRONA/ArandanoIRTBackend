@@ -158,7 +158,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex) // Handle potential database errors.
             {
-                _logger.LogError($"Error retrieving statuses for table {tableName}: {ex.Message}");
+                _logger.LogError(ex, "Error retrieving statuses for table.");
                 return Result<IEnumerable<StatusEntity>>.Failure("Error retrieving statuses.");
             }
         }
@@ -199,7 +199,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex) // Handle potential database errors.
             {
-                _logger.LogError( $"Error retrieving status by ID {id}: {ex.Message}");
+                _logger.LogError(ex, "Error retrieving status by ID.");
                 return Result<StatusEntity>.Failure("Error retrieving status by ID.");
             }
         }
@@ -237,7 +237,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (Exception ex) // Handle potential database errors.
             {
-                _logger.LogError($"Error retrieving all statuses: {ex.Message}");
+                _logger.LogError(ex, "Error retrieving all statuses.");
                 return Result<IEnumerable<StatusEntity>>.Failure("Error retrieving all statuses.");
             }
         }
@@ -279,12 +279,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handle DB errors.
             {
-                _logger.LogError($"Database error creating status. Entity: {@entity}, {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError(dbEx, "Database error creating status. Entity.");
                 return Result<StatusEntity>.Failure("Database error creating status.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.LogError($"Database error creating status. Entity: {@entity}, {ex.InnerException?.Message ?? ex.Message}");
+                _logger.LogError(ex, "Database error creating status. Entity.");
                 return Result<StatusEntity>.Failure("Error creating status.");
             }
         }
@@ -337,12 +337,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handle other DB update errors.
             {
-                _logger.LogError($"Database error updating status ID: {entity.IdStatus}. Entity: {@entity}. Message: {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError(dbEx, "Database error updating status ID.");
                 return Result<bool>.Failure("Database error updating status.");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.LogError($"Error updating status ID: {entity.IdStatus}. Entity: {entity}, {ex.Message}");
+                _logger.LogError(ex, "Error updating status ID.");
                 return Result<bool>.Failure("Error updating status.");
             }
         }
@@ -382,12 +382,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handle DB errors (e.g., FK constraints).
             {
-                _logger.LogError($"Database error deleting status ID: {id} (check for related records): {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError(dbEx, "Database error deleting status ID.");
                 return Result<bool>.Failure("Database error deleting status (check for related records).");
             }
             catch (Exception ex) // Handle general errors.
             {
-                _logger.LogError($"Error deleting status ID: {id}, {ex.Message}");
+                _logger.LogError(ex, "Error deleting status ID.");
                 return Result<bool>.Failure("Error deleting status.");
             }
         }

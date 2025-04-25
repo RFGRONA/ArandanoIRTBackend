@@ -1,6 +1,4 @@
-﻿using System; // Assuming DateTime is available via global usings or project settings.
-
-namespace ArandanoIRT_Backend.Application.Interfaces.Auditing
+﻿namespace ArandanoIRT_Backend.Application.Interfaces.Auditing
 {
     /// <summary>
     /// Represents metadata associated with an audited event or action.

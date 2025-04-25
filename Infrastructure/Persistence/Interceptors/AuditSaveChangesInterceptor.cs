@@ -58,7 +58,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData,
             InterceptionResult<int> result,
-            CancellationToken cancellationToken) // Removed '= default'
+            CancellationToken cancellationToken = default)
         {
             var context = eventData.Context;
             if (context == null)
@@ -76,7 +76,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
             var allAuditEntries = GenerateAuditEntriesForChanges(context, metadata);
 
             // Add generated entries to the context if any were created
-            if (allAuditEntries.Any())
+            if (allAuditEntries.Count != 0)
             {
                 _logger.LogInformation("Adding {AuditCount} total audit entries to the DbContext.", allAuditEntries.Count);
                 // Use await with AddRangeAsync
@@ -178,7 +178,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Interceptors
         /// </summary>
         /// <param name="entity">The entity object to check.</param>
         /// <returns><c>true</c> if the entity is an audit log type; otherwise, <c>false</c>.</returns>
-        private bool IsAuditEntity(object entity)
+        private static bool IsAuditEntity(object entity)
         {
             // Checks if the entity belongs to one of the known audit entity types.
             return entity is Auditcrop ||

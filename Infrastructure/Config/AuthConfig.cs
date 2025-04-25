@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Net.Http.Headers;
 
 namespace ArandanoIRT_Backend.Infrastructure.Config
 {
@@ -28,7 +29,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             {
                 // Logs a fatal error and throws if the key is missing, as authentication cannot proceed.
                 Log.Fatal("JWT Key ('Jwt:Key') is missing in configuration. Authentication cannot be configured.");
-                throw new ArgumentNullException(nameof(jwtKey), "JWT key ('Jwt:Key') cannot be null or empty in configuration.");
+                throw new InvalidOperationException("Authentication cannot be configured.");
             }
             // Converts the key to bytes using ASCII encoding.
             var signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey));
@@ -47,7 +48,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
                 // Optional: Saves the validated token in HttpContext.AuthenticateAsync().Result.Properties.
                 options.SaveToken = true;
                 // Defines the parameters used to validate incoming JWTs.
-                options.TokenValidationParameters = CreateTokenValidationParameters(signingKey, configuration);
+                options.TokenValidationParameters = CreateTokenValidationParameters(signingKey);
                 // Configures event handlers for the JwtBearer authentication process.
                 options.Events = CreateJwtBearerEvents();
             });
@@ -60,9 +61,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
         /// Creates and configures the token validation parameters.
         /// </summary>
         /// <param name="signingKey">The symmetric security key used for signature validation.</param>
-        /// <param name="configuration">The application configuration to potentially read issuer/audience.</param>
         /// <returns>A configured <see cref="TokenValidationParameters"/> object.</returns>
-        private static TokenValidationParameters CreateTokenValidationParameters(SymmetricSecurityKey signingKey, IConfiguration configuration)
+        private static TokenValidationParameters CreateTokenValidationParameters(SymmetricSecurityKey signingKey)
         {
             // var validIssuer = configuration["Jwt:Issuer"];       
             // var validAudience = configuration["Jwt:Audience"];   
@@ -105,7 +105,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
                     // 2. Cookie ('jwt') - Fallback mechanism, potentially for web UIs.
 
                     // Checks the Authorization header first.
-                    var accessToken = context.Request.Headers["Authorization"].FirstOrDefault();
+                    var accessToken = context.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
                     if (!string.IsNullOrEmpty(accessToken) && accessToken.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                     {
                         // Extracts the token value from the "Bearer " prefix.
@@ -139,8 +139,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
                     if (context.Exception is SecurityTokenExpiredException expiredException) // Type pattern matching
                     {
                         Log.Information("JWT authentication failed: Token expired at {Expiry}.", expiredException.Expires);
-                        // Optionally add a header to signal expiry to the client (useful for frontend logic).
-                        // REMOVED: context.Response.Headers.Append("X-Token-Expired", "true");
+                        context.Response.Headers.Append("X-Token-Expired", "true");
                     }
                     else if (context.Exception is SecurityTokenInvalidSignatureException)
                     {

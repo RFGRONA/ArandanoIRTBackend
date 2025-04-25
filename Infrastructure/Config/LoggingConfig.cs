@@ -35,7 +35,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             {
                 // Throws if configuration is incomplete, preventing startup with misconfigured OTLP sink.
                 // Consider logging a fatal error here as well if desired before throwing.
-                throw new ArgumentNullException("OneUptime logging configuration is missing required values (ServiceName, OtlpEndpoint, OtlpToken).");
+                throw new InvalidOperationException("OneUptime logging configuration is missing required values (ServiceName, OtlpEndpoint, OtlpToken). Check the 'Logging:OneUptime' section.");
             }
 
             // Determines the directory for log files relative to the application's execution path.

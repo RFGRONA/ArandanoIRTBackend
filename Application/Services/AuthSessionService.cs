@@ -27,6 +27,8 @@ namespace ArandanoIRT_Backend.Application.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ILogger<AuthSessionService> _logger;
 
+        public const string EmailError = "Invalid email or password."; 
+
         // Constructor
         public AuthSessionService(
             IAuthUtilities authUtilities,
@@ -88,7 +90,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 // Log the specific event of user not found during login
                 _logger.LogWarning("Login failed: User not found for email {Email} from IP {IPAddress}", request.Email, ipAddress);
                 // Simple message for API response
-                return Result<LoginSuccessPayload>.Failure("Invalid email or password.");
+                return Result<LoginSuccessPayload>.Failure(EmailError);
             }
             var person = personResult.Value;
 
@@ -187,7 +189,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 // Log detailed error
                 _logger.LogWarning("Invalid email format during login: {Email}. Reason: {Reason}", request.Email, emailValidation.ErrorMessage);
                 // Simple message for API response (security)
-                return Result.Failure("Invalid email or password.");
+                return Result.Failure(EmailError);
             }
             // Input is valid
             return Result.Success();
@@ -222,14 +224,11 @@ namespace ArandanoIRT_Backend.Application.Services
                 await RecordFailedLoginAttemptAsync(person.IdPerson, now, ipAddress, deviceInfo, userAgent);
                 await CheckAndSendSuspiciousActivityWarningAsync(person, timeThreshold, FailedAttemptThreshold, ipAddress); // Check after recording
                 // Simple failure message
-                return Result.Failure("Invalid email or password.");
+                return Result.Failure(EmailError);
             }
 
             // Verify the decrypted password against the stored hash
             bool isPasswordValid = _passwordHasher.Verify(person.Password, decryptedPassword); // Use injected PasswordHasher
-
-            // Clear decrypted password from memory ASAP (though string makes this tricky)
-            decryptedPassword = string.Empty; // Best effort for local variable
 
             if (!isPasswordValid)
             {
@@ -240,7 +239,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 // Check if threshold met and send warning
                 await CheckAndSendSuspiciousActivityWarningAsync(person, timeThreshold, FailedAttemptThreshold, ipAddress);
                 // Simple failure message
-                return Result.Failure("Invalid email or password.");
+                return Result.Failure(EmailError);
             }
 
             // Password is valid
@@ -276,13 +275,14 @@ namespace ArandanoIRT_Backend.Application.Services
         }
 
         /// <summary>
-        /// Prepares the successful login payload DTO.
+        /// Prepares the successful login payload including DTO and refresh token.
+        /// Marked as static as it doesn't access instance members.
         /// </summary>
-        /// <param name="person">The logged-in user entity.</param>
+        /// <param name="person">The authenticated person entity.</param>
         /// <param name="accessToken">The generated JWT access token.</param>
-        /// <param name="refreshToken">The generated refresh token string.</param>
-        /// <returns>The LoginSuccessPayload DTO.</returns>
-        private LoginSuccessPayload PrepareLoginPayload(PersonEntity person, string accessToken, string refreshToken)
+        /// <param name="refreshToken">The generated refresh token.</param>
+        /// <returns>A LoginSuccessPayload object.</returns>
+        private static LoginSuccessPayload PrepareLoginPayload(PersonEntity person, string accessToken, string refreshToken)
         {
             // Map PersonEntity to the LoginResponseDto part of the payload
             var loginResponseDto = AuthMapping.ToLoginResponseDto(person);

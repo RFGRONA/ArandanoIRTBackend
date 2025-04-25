@@ -11,10 +11,12 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
     /// Implements <see cref="IAuditHelperService"/> providing utility methods
     /// commonly used during the generation of audit log entries, such as
     /// primary key retrieval, foreign key retrieval (CropId), and property value serialization.
-    /// </summary>
+    /// </summary>"Invalid email or password."
     public class AuditHelperService : IAuditHelperService
     {
         private readonly ILogger<AuditHelperService> _logger;
+
+        public const string UnknownTableName = "<Unknown>"; 
 
         // Assume Person class definition exists for nameof(Person.Password)
         public class Person { public string? Password { get; set; } }
@@ -59,6 +61,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// </remarks>
         public int? GetPrimaryKeyValue(EntityEntry entry)
         {
+            // Guard Clause 0: Check if the entry is null or not tracked
+            if (entry.State == EntityState.Added)
+            {
+                LogWarningReturningNullPrimaryKey(entry);
+                return null;
+            }
+
             var primaryKey = entry.Metadata.FindPrimaryKey();
 
             // Guard Clause 1: No Primary Key found
@@ -76,7 +85,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             }
 
             // --- We know we have a single primary key property here ---
-            var pkProperty = primaryKey.Properties.First();
+            var pkProperty = primaryKey.Properties[0];
             var pkPropertyEntry = entry.Property(pkProperty.Name);
 
             // Determine the value to check first (Current, unless state is Deleted)
@@ -118,25 +127,25 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         private void LogWarningMissingPrimaryKey(EntityEntry entry)
         {
             _logger.LogWarning("Primary Key not found for entity type '{EntityType}' in table '{TableName}'.",
-            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
+            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? UnknownTableName);
         }
 
         private void LogWarningCompositePrimaryKey(EntityEntry entry)
         {
             _logger.LogWarning("Entity type '{EntityType}' in table '{TableName}' has a composite PK, not supported by simple GetPrimaryKeyValue.",
-            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>");
+            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? UnknownTableName);
         }
 
         private void LogWarningPrimaryKeyNotInt(EntityEntry entry, string pkName, object pkValue)
         {
             _logger.LogWarning("PK '{PKName}' in table '{TableName}' is not of type INT. Value: {PKValue}, Type: {PKType}",
-            pkName, entry.Metadata.GetTableName() ?? "<Unknown>", pkValue, pkValue.GetType().Name);
+            pkName, entry.Metadata.GetTableName() ?? UnknownTableName, pkValue, pkValue.GetType().Name);
         }
 
         private void LogWarningReturningNullPrimaryKey(EntityEntry entry)
         {
             _logger.LogWarning("Returning null PK for entity type '{EntityType}' in table '{TableName}' with state {EntityState}.",
-            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? "<Unknown>", entry.State);
+            entry.Entity.GetType().Name, entry.Metadata.GetTableName() ?? UnknownTableName, entry.State);
         }
 
 
@@ -200,7 +209,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                 }
             }
 
-            return dictionary.Any() ? dictionary : null;
+            return dictionary.Count != 0 ? dictionary : null;
         }
 
         /// <inheritdoc/>

@@ -6,6 +6,12 @@
     /// </summary>
     public static class CORSConfig
     {
+        private static readonly string[] _allAllowedOrigins = new[]
+        {
+            "http://localhost:3000", // Local development frontend
+            "https://arandanoirt.co"  // Production frontend/domain
+        };
+
         /// <summary>
         /// Configures and adds custom CORS policies to the application's service collection.
         /// Defines policies named "AllAllowed" and "OnlyFrontend" with specific origin configurations.
@@ -20,14 +26,8 @@
                 // Allows requests from specified development and production origins.
                 options.AddPolicy("AllAllowed", builder =>
                 {
-                    // List of allowed origins for this policy.
-                    var allowedOrigins = new[]
-                    {
-                        "http://localhost:3000", // Local development frontend
-                        "https://arandanoirt.co"  // Production frontend/domain
-                    };
 
-                    builder.WithOrigins(allowedOrigins) // Specifies the allowed origins.
+                    builder.WithOrigins(_allAllowedOrigins) // Specifies the allowed origins.
                            .AllowAnyHeader()            // Allows any request header.
                            .AllowAnyMethod()            // Allows any HTTP method (GET, POST, PUT, etc.).
                            .AllowCredentials();         // Allows credentials (cookies, authorization headers) to be sent.

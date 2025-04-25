@@ -44,12 +44,12 @@
         /// <summary>
         /// Gets the date and time (usually UTC) when the device entity was last updated. Nullable if never updated.
         /// </summary>
-        public DateTime? UpdatedAt { get; private set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Gets the unique identifier of the user who last updated the device entity. Nullable if never updated.
         /// </summary>
-        public int? UpdatedBy { get; private set; }
+        public int? UpdatedBy { get; set; }
 
         /// <summary>
         /// Gets the unique identifier of the crop to which this device is assigned. Nullable.

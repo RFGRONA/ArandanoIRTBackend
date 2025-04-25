@@ -21,7 +21,7 @@
         /// Gets the optional foreign key linking this status to a specific table or entity type definition
         /// in the TableRelationEntity, indicating where this status is primarily used. Nullable.
         /// </summary>
-        public int? TableRelationId { get; private set; }
+        public int? TableRelationId { get; set; }
 
         /// <summary>
         /// Gets the optional navigation property to the related <see cref="TableRelationEntity"/>.

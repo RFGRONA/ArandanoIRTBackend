@@ -98,7 +98,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
         /// </summary>
         /// <param name="ua">The UAParser UserAgent object.</param>
         /// <returns>Formatted version string or empty string.</returns>
-        private string GetVersion(UserAgent? ua)
+        private static string GetVersion(UserAgent? ua)
         {
             // Delegate to the core version string builder if UA is not null
             return ua == null ? string.Empty : BuildVersionString(ua.Major, ua.Minor, ua.Patch);
@@ -109,7 +109,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
         /// </summary>
         /// <param name="os">The UAParser OS object.</param>
         /// <returns>Formatted version string or empty string.</returns>
-        private string GetVersion(OS? os)
+        private static string GetVersion(OS? os)
         {
             // Delegate to the core version string builder if OS is not null
             return os == null ? string.Empty : BuildVersionString(os.Major, os.Minor, os.Patch);
@@ -123,7 +123,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
         /// <param name="minor">The minor version part (nullable).</param>
         /// <param name="patch">The patch version part (nullable).</param>
         /// <returns>A formatted version string (e.g., "10.2.1", "11.5", "12") or an empty string if major is null/empty.</returns>
-        private string BuildVersionString(string? major, string? minor, string? patch) // Renamed from GetVersion
+        private static string BuildVersionString(string? major, string? minor, string? patch) // Renamed from GetVersion
         {
             // Use string.Join for potentially cleaner concatenation (though nested ifs are also fine)
             var parts = new[] { major, minor, patch };

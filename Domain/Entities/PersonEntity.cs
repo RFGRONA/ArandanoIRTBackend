@@ -39,17 +39,17 @@
         /// <summary>
         /// Gets the date and time (usually UTC) when the user account details were last updated. Nullable if never updated.
         /// </summary>
-        public DateTime? UpdatedAt { get; private set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Gets the date and time (usually UTC) of the user's last successful login. Nullable if never logged in.
         /// </summary>
-        public DateTime? LastLoginAt { get; private set; }
+        public DateTime? LastLoginAt { get; set; }
 
         /// <summary>
         /// Gets the date and time (usually UTC) when the user's password was last changed. Nullable if never changed after creation.
         /// </summary>
-        public DateTime? LastPasswordChangeAt { get; private set; }
+        public DateTime? LastPasswordChangeAt { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether the user has administrative privileges.

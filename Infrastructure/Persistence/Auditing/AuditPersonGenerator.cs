@@ -48,13 +48,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         {
             var auditEntries = new List<Auditperson>();
 
-            // Safety check using pattern matching
-            if (entry.Entity is not Person personEntity)
-            {
-                _logger.LogWarning("AuditPersonGenerator called with unexpected entity type: {EntityType}", entry.Entity.GetType().Name);
-                return auditEntries; // Return empty list
-            }
-
             var recordId = _auditHelper.GetPrimaryKeyValue(entry);
             var cropId = _auditHelper.GetCropIdValue(entry);
 
@@ -107,7 +100,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// <param name="action">The action performed (INSERT, UPDATE, DELETE).</param>
         /// <param name="columnName">The name of the column affected ("ALL" for INSERT/DELETE, specific name for UPDATE).</param>
         /// <returns>A new <see cref="Auditperson"/> object.</returns>
-        private Auditperson CreateBaseAuditEntry(AuditMetadata metadata, int recordId, int? cropId, string action, string columnName)
+        private static Auditperson CreateBaseAuditEntry(AuditMetadata metadata, int recordId, int? cropId, string action, string columnName)
         {
             return new Auditperson
             {

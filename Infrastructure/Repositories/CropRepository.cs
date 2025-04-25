@@ -45,7 +45,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             return cropEntity;
         }
 
-        private Crop MapToDbModel(CropEntity entity, Crop? existingCrop = null)
+        private static Crop MapToDbModel(CropEntity entity, Crop? existingCrop = null)
         {
             var crop = existingCrop ?? new Crop();
 
@@ -205,7 +205,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             MapToDbModel(entity, existingCrop);
 
             // Set the UpdatedAt timestamp using helper
-            SetUpdatedAt(existingCrop, entity);
+            SetUpdatedAt(existingCrop);
 
             // Mark as modified (though FindAsync + modifications usually does this) and save
             _context.Crop.Update(existingCrop); // Explicitly mark update
@@ -229,20 +229,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
         /// Sets the UpdatedAt property on the database model based on domain entity value or current time.
         /// </summary>
         /// <param name="existingCrop">The database entity being updated.</param>
-        /// <param name="entity">The domain entity providing potential update value.</param>
-        private void SetUpdatedAt(Crop existingCrop, CropEntity entity)
+        private void SetUpdatedAt(Crop existingCrop)
         {
-            // Always update the timestamp to reflect the update operation time.
-            // Use the value from the entity only if it's explicitly provided *and* later than the existing one (less common).
-            // Typically, we just set it to 'now'.
-            // Let's simplify to always set UpdatedAt to 'now' during an update operation.
             existingCrop.Updatedat = _dateTimeProvider.GetUtcNow();
-
-            // Original more complex logic (kept commented for reference if needed):
-            // if (existingCrop.Updatedat == null || (entity.UpdatedAt.HasValue && existingCrop.Updatedat < entity.UpdatedAt.Value))
-            //     existingCrop.Updatedat = entity.UpdatedAt ?? _dateTimeProvider.GetUtcNow();
-            // else if (!entity.UpdatedAt.HasValue || existingCrop.Updatedat >= entity.UpdatedAt.Value)
-            //     existingCrop.Updatedat = _dateTimeProvider.GetUtcNow();
         }
 
 

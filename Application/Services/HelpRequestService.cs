@@ -1,5 +1,6 @@
 ﻿using ArandanoIRT_Backend.Application.DTOs.Auth;
 using ArandanoIRT_Backend.Application.Interfaces.IServices;
+using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using ArandanoIRT_Backend.Domain.Entities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
@@ -80,9 +81,6 @@ namespace ArandanoIRT_Backend.Application.Services
                 _logger.LogWarning("Help request validation failed due to missing required fields.");
                 return Result.Failure("All fields (Name, Email, Subject, Crop Name, Message) are required.");
             }
-            // Could add email format validation here too using EmailValidatorUtility if needed.
-            // var emailValidation = EmailValidatorUtility.ValidateEmail(request.Email);
-            // if (emailValidation.IsFailure) return Result.Failure(emailValidation.ErrorMessage);
 
             return Result.Success();
         }

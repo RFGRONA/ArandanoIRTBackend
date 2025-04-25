@@ -286,9 +286,9 @@ namespace ArandanoIRT_Backend.Application.Services
             }
             catch (ArgumentException argEx) // Catch potential mapping errors
             {
-                _logger.LogWarning("Failed to map Crop DTO to Entity during admin registration. Error: {Error}", argEx.Message);
+                _logger.LogWarning(argEx, "Failed to map Crop DTO to Entity during admin registration.");
                 // Simple failure message
-                return Result<CropEntity>.Failure($"Invalid crop data provided: {argEx.Message}");
+                return Result<CropEntity>.Failure("Invalid crop data provided.");
             }
 
             // Create the crop in the repository
@@ -298,7 +298,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 // Log repository error
                 _logger.LogError("Failed to create crop in repository during admin registration for email {Email}. Error: {Error}", request.AdminInfo!.Email, createCropResult.ErrorMessage);
                 // Simple failure message
-                return Result<CropEntity>.Failure($"Failed to save crop information.");
+                return Result<CropEntity>.Failure("Failed to save crop information.");
             }
             // Return the successful result with the saved entity (includes ID)
             return createCropResult;
@@ -322,7 +322,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 personEntity = request.ToAdminPersonEntity(now);
 
                 // Set properties not handled by basic mapping
-                // TODO: Avoid reflection. Add methods to entity or improve mapping.
+                // Avoid reflection. Add methods to entity or improve mapping.
                 typeof(PersonEntity).GetProperty("Password")?.SetValue(personEntity, hashedPassword, null);
                 typeof(PersonEntity).GetProperty("CropId")?.SetValue(personEntity, cropId, null);
 
@@ -358,7 +358,7 @@ namespace ArandanoIRT_Backend.Application.Services
             try
             {
                 // Set properties on the existing entity instance
-                // TODO: Avoid reflection. Add methods to entity or improve mapping/repository update method.
+                // Avoid reflection. Add methods to entity or improve mapping/repository update method.
                 typeof(CropEntity).GetProperty("AdminUserId")?.SetValue(crop, adminId, null);
                 typeof(CropEntity).GetProperty("UpdatedAt")?.SetValue(crop, _dateTimeProvider.GetUtcNow(), null);
 
@@ -401,7 +401,7 @@ namespace ArandanoIRT_Backend.Application.Services
                 personEntity = request.ToUserPersonEntity(now, cropId);
 
                 // Set properties not handled by basic mapping
-                // TODO: Avoid reflection. Add methods to entity or improve mapping.
+                // Avoid reflection. Add methods to entity or improve mapping.
                 typeof(PersonEntity).GetProperty("Password")?.SetValue(personEntity, hashedPassword, null);
 
             }

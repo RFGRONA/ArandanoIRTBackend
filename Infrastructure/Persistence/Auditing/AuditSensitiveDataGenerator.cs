@@ -101,7 +101,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
             }
 
             // --- We know we have a single primary key property here ---
-            var pkProperty = primaryKey.Properties.First();
+            var pkProperty = primaryKey.Properties[0];
             var pkPropertyEntry = entry.Property(pkProperty.Name);
 
             // Try CurrentValue first
@@ -136,7 +136,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// </summary>
         /// <param name="entry">The EntityEntry representing the tracked entity.</param>
         /// <returns>The integer CropId value if found, otherwise null.</returns>
-        private int? GetCropIdValue(EntityEntry entry)
+        private static int? GetCropIdValue(EntityEntry entry)
         {
             // Tries to get the property "CropId" or "Cropid" (case-insensitive).
             var cropIdProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name.Equals("CropId", StringComparison.OrdinalIgnoreCase)); // Simplified check
