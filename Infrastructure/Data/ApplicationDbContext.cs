@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace ArandanoIRT_Backend.Infrastructure.Data;
 
@@ -61,8 +59,16 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Thermaldata> Thermaldata { get; set; }
 
+    // Overrides the default configuration method for the DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseNpgsql("Name=ConnectionString");
+    {
+        // Only configures Npgsql if no provider has been configured externally
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Set the Npgsql provider using the connection string name
+            optionsBuilder.UseNpgsql("Name=ConnectionString");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
