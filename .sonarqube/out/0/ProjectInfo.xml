@@ -2,7 +2,7 @@
 <ProjectInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonarsource.com/msbuild/integration/2015/1">
   <ProjectName>ArandanoIRT-Backend</ProjectName>
   <ProjectLanguage>C#</ProjectLanguage>
-  <ProjectType>Product</ProjectType>
+  <ProjectType>Test</ProjectType>
   <ProjectGuid>c3d2ed76-7217-4fd1-ad6c-d7af074d679d</ProjectGuid>
   <FullPath>C:\Users\gabma\Documents\GitHub\ArandanoIRTBackend\ArandanoIRT-Backend.csproj</FullPath>
   <IsExcluded>false</IsExcluded>

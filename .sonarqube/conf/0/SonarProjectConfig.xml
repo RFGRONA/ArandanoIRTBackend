@@ -4,6 +4,6 @@
   <ProjectPath>C:\Users\gabma\Documents\GitHub\ArandanoIRTBackend\ArandanoIRT-Backend.csproj</ProjectPath>
   <FilesToAnalyzePath>C:\Users\gabma\Documents\GitHub\ArandanoIRTBackend\.sonarqube\conf\0\FilesToAnalyze.txt</FilesToAnalyzePath>
   <OutPath>C:\Users\gabma\Documents\GitHub\ArandanoIRTBackend\.sonarqube\out\0</OutPath>
-  <ProjectType>Product</ProjectType>
+  <ProjectType>Test</ProjectType>
   <TargetFramework>net8.0</TargetFramework>
 </SonarProjectConfig>
