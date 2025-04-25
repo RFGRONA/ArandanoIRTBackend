@@ -5,3 +5,5 @@ appsettings.json
 /obj
 /Logs
 Properties/PublishProfiles/FTPProfile.pubxml.user
+/Docs
+Doxyfile
