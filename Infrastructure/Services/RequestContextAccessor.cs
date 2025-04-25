@@ -63,8 +63,16 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         /// <inheritdoc/>
         public string GetUserAgent()
         {
-            // Reads the User-Agent header from the request, returning "Unknown" if unavailable.
-            return CurrentHttpContext?.Request.Headers.UserAgent.ToString() ?? "Unknown";
+            // Returns "Unknown" if HttpContext is not available.
+            var userAgentValues = CurrentHttpContext?.Request.Headers.UserAgent ?? StringValues.Empty;
+
+            // Checks if the User-Agent header is empty or null.
+            if (StringValues.IsNullOrEmpty(userAgentValues))
+            {
+                return "Unknown"; 
+            }
+            // If the User-Agent header is present, return its value as a string.
+            return userAgentValues.ToString();
         }
 
         /// <inheritdoc/>

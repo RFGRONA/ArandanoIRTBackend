@@ -1,4 +1,6 @@
-﻿namespace ArandanoIRT_Backend.Domain.ValueObjects
+﻿using System.Text;
+
+namespace ArandanoIRT_Backend.Domain.ValueObjects
 {
     /// <summary>
     /// Holds parsed information about the client (e.g., browser, OS, device) making a request,
@@ -27,36 +29,62 @@
         /// </returns>
         public string ToFormattedString()
         {
-            // Constructs the User Agent part (Family + optional Version).
-            string agentPart = string.IsNullOrWhiteSpace(UserAgentVersion)
-                ? UserAgentFamily
-                : $"{UserAgentFamily} {UserAgentVersion}".Trim();
+            string trimmedAgentVersion = UserAgentVersion?.Trim() ?? "";
+            string trimmedOSVersion = OSVersion?.Trim() ?? "";
+            bool agentKnown = UserAgentFamily != "Unknown";
+            bool osKnown = OSFamily != "Unknown OS";
+            // Treat OSFamily "Other" as "unknown" for formatting purposes *unless* it's the only info besides device
+            bool osSignificant = osKnown && OSFamily != "Other";
+            bool deviceKnown = DeviceFamily != "Unknown Device";
+            // Treat DeviceFamily "Other" as "unknown" for formatting *unless* it's the only info overall
+            bool deviceSignificant = deviceKnown && DeviceFamily != "Other";
 
-            // Constructs the OS part (Family + optional Version).
-            string osPart = string.IsNullOrWhiteSpace(OSVersion)
-                ? OSFamily
-                : $"{OSFamily} {OSVersion}".Trim();
+            var builder = new StringBuilder();
 
-            // Prioritizes displaying Agent and/or OS if known.
-            if (agentPart != "Unknown" || osPart != "Unknown OS")
+            // Append User Agent part if known
+            if (agentKnown)
             {
-                // Combines Agent and OS if both are known and different from default values.
-                if (agentPart != "Unknown" && osPart != "Unknown OS")
-                    return $"{agentPart} / {osPart}";
-                // Shows only Agent if OS is unknown.
-                if (agentPart != "Unknown")
-                    return agentPart;
-                // Shows only OS if Agent is unknown.
-                // osPart != "Unknown OS"
-                return osPart;
+                builder.Append(UserAgentFamily);
+                if (!string.IsNullOrWhiteSpace(trimmedAgentVersion))
+                {
+                    builder.Append(' ').Append(trimmedAgentVersion);
+                }
             }
-            // Falls back to Device Family if Agent and OS are unknown.
-            if (DeviceFamily != "Unknown Device")
+
+            // Append significant OS part if known
+            if (osSignificant)
             {
-                return DeviceFamily;
+                if (builder.Length > 0) builder.Append(" / ");
+                builder.Append(OSFamily);
+                if (!string.IsNullOrWhiteSpace(trimmedOSVersion))
+                {
+                    builder.Append(' ').Append(trimmedOSVersion);
+                }
             }
-            // Ultimate fallback if no information is available.
-            return "Unknown Device";
+
+            // Append significant Device part if known
+            if (deviceSignificant)
+            {
+                // Only add separator if Agent or Significant OS was added
+                if (builder.Length > 0 && (agentKnown || osSignificant)) builder.Append(" / ");
+                // Add device only if it's significant OR if nothing else was significant
+                if (deviceSignificant || (!agentKnown && !osSignificant))
+                {
+                    builder.Append(DeviceFamily);
+                }
+
+            }
+
+            // Fallback logic
+            if (builder.Length == 0)
+            {
+                // If nothing significant was found, return the most specific known piece, or default
+                if (agentKnown) return UserAgentFamily + (!string.IsNullOrWhiteSpace(trimmedAgentVersion) ? $" {trimmedAgentVersion}" : ""); // UA is best fallback
+                if (osKnown) return OSFamily + (!string.IsNullOrWhiteSpace(trimmedOSVersion) ? $" {trimmedOSVersion}" : ""); // OS is second best
+                return DeviceFamily; // Device is last resort
+            }
+
+            return builder.ToString();
         }
     }
 }
