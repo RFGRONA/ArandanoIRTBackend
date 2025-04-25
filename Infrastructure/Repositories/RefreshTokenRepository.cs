@@ -98,7 +98,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                                                .ToListAsync();
 
                 // If no active tokens found for the session, consider the operation successful.
-                if (!tokensToRevoke.Any())
+                if (tokensToRevoke.Count == 0)
                 {
                     _logger.LogInformation("No active refresh tokens found to revoke for session ID {SessionId}.", sessionId);
                     return Result<bool>.Success(true); // Nothing to revoke is considered success.
@@ -131,7 +131,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             }
             catch (DbUpdateException dbEx) // Handle database update errors.
             {
-                _logger.LogError($"Database error revoking tokens by session ID {sessionId}: {dbEx.InnerException?.Message ?? dbEx.Message}");
+                _logger.LogError(dbEx, "Database error revoking tokens by session ID.");
                 return Result<bool>.Failure("Database error revoking tokens by session ID.");
             }
             catch (Exception ex) // Handle general errors.
@@ -199,7 +199,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                                                    .ToListAsync();
 
                 // If no tokens found, consider deletion successful.
-                if (!tokensToDelete.Any()) return Result<bool>.Success(true);
+                if (tokensToDelete.Count == 0) return Result<bool>.Success(true);
 
                 // Removes found tokens and saves changes.
                 _context.Refreshtoken.RemoveRange(tokensToDelete);
@@ -232,7 +232,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                                                    .ToListAsync();
 
                 // If no expired tokens found, consider successful.
-                if (!tokensToDelete.Any()) return Result<bool>.Success(true);
+                if (tokensToDelete.Count == 0) return Result<bool>.Success(true);
 
                 // Removes found tokens and saves changes.
                 _context.Refreshtoken.RemoveRange(tokensToDelete);

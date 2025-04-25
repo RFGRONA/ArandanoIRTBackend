@@ -1,7 +1,7 @@
 ﻿using ArandanoIRT_Backend.Application.DTOs.Auth;
+using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using ArandanoIRT_Backend.Application.Utilities;
 using ArandanoIRT_Backend.Domain.ValueObjects;
-using Serilog;
 
 namespace ArandanoIRT_Backend.Infrastructure.Utilities 
 {
@@ -9,16 +9,40 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
     /// Implements the <see cref="IEmailService"/> interface using an underlying <see cref="EmailSenderUtility"/>
     /// to send emails via SMTP. Also provides methods to generate standard email body content.
     /// </summary>
-    public class SmtpEmailService(IConfiguration configuration, ILogger<SmtpEmailService> logger) : IEmailService 
+    public class SmtpEmailService : IEmailService 
     {
         /// <summary>
         /// Utility responsible for the actual SMTP sending logic.
         /// </summary>
-        private readonly EmailSenderUtility _emailSender = new(configuration);
+        private readonly EmailSenderUtility _emailSender;
         /// <summary>
         /// Logger instance for logging email sending events.
         /// </summary>
-        private readonly ILogger<SmtpEmailService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILogger<SmtpEmailService> _logger;
+        /// <summary>
+        /// Configuration instance for accessing SMTP settings.
+        /// </summary>
+        private readonly IConfiguration _configuration;
+
+        /// <summary>
+        /// EmailSenderUtility instance for sending emails.
+        /// </summary>
+        public SmtpEmailService(IConfiguration configuration, ILogger<SmtpEmailService> logger)
+        {
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _emailSender = new(configuration);
+
+            // Validates the SMTP configuration settings.
+            if (string.IsNullOrEmpty(_configuration["Smtp:Host"]) ||
+                string.IsNullOrEmpty(_configuration["Smtp:Port"]) ||
+                string.IsNullOrEmpty(_configuration["Smtp:User"]) ||
+                string.IsNullOrEmpty(_configuration["Smtp:Password"]) ||
+                string.IsNullOrEmpty(_configuration["Smtp:From"]))
+            {
+                throw new InvalidOperationException("SMTP configuration is not properly set.");
+            }
+        }
 
         /// <inheritdoc/>
         /// <remarks>
@@ -49,14 +73,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
         }
 
         /// <inheritdoc/>
-        public string GeneratePasswordResetBody(string userName, string resetLink)
+        public string GeneratePasswordResetBody(string userName, string resetToken)
         {
             // Returns the email body content in Spanish as requested.
             return $@"
              <html><body>
              <p>Hola {userName},</p>
              <p>Solicitaste un restablecimiento de contraseña. Por favor, haz clic en el siguiente enlace para restablecer tu contraseña:</p>
-             <p><a href='{resetLink}'>Restablecer Contraseña</a></p>
+             <p><a href='{resetToken}'>Restablecer Contraseña</a></p>
              <p>Si no solicitaste esto, por favor ignora este correo electrónico.</p>
              <p>Este enlace expirará en 30 minutos.</p>
              </body></html>";

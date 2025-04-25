@@ -39,17 +39,17 @@
         /// <summary>
         /// Gets the date and time (usually UTC) when the user account details were last updated. Nullable if never updated.
         /// </summary>
-        public DateTime? UpdatedAt { get; private set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Gets the date and time (usually UTC) of the user's last successful login. Nullable if never logged in.
         /// </summary>
-        public DateTime? LastLoginAt { get; private set; }
+        public DateTime? LastLoginAt { get; set; }
 
         /// <summary>
         /// Gets the date and time (usually UTC) when the user's password was last changed. Nullable if never changed after creation.
         /// </summary>
-        public DateTime? LastPasswordChangeAt { get; private set; }
+        public DateTime? LastPasswordChangeAt { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether the user has administrative privileges.
@@ -99,11 +99,13 @@
         {
             // Validates required name fields.
             if (string.IsNullOrWhiteSpace(firstName))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("El nombre es requerido.", nameof(firstName));
+            {
+                throw new ArgumentException("First name is required.", nameof(firstName));
+            }
             if (string.IsNullOrWhiteSpace(lastName))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("El apellido es requerido.", nameof(lastName));
+            {
+                throw new ArgumentException("Last name is required.", nameof(lastName));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdPerson = idPerson;

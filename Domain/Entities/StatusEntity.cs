@@ -21,7 +21,7 @@
         /// Gets the optional foreign key linking this status to a specific table or entity type definition
         /// in the TableRelationEntity, indicating where this status is primarily used. Nullable.
         /// </summary>
-        public int? TableRelationId { get; private set; }
+        public int? TableRelationId { get; set; }
 
         /// <summary>
         /// Gets the optional navigation property to the related <see cref="TableRelationEntity"/>.
@@ -45,7 +45,9 @@
         {
             // Validates the status name.
             if (string.IsNullOrWhiteSpace(nameStatus))
-                throw new ArgumentException("El nombre del status es requerido.", nameof(nameStatus));
+            { 
+                throw new ArgumentException("The status name is required.", nameof(nameStatus)); 
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdStatus = idStatus;

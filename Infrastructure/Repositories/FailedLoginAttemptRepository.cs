@@ -180,6 +180,17 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 {
                     _logger.LogWarning("Could not set IdFailedLoginAttempt on domain entity after creation.");
                 }
+
+                // Workaround: Update AttemptDate post-save
+                var dateProperty = typeof(FailedLoginAttemptEntity).GetProperty(nameof(FailedLoginAttemptEntity.AttemptDate));
+                if (dateProperty?.CanWrite == true)
+                {
+                    dateProperty.SetValue(entity, dbModel.Attemptdate, null);
+                }
+                else
+                {
+                    _logger.LogWarning("Could not set AttemptDate on domain entity after creation.");
+                }
                 // --- End Workaround ---
 
                 // Returns success with the potentially updated domain entity.

@@ -86,7 +86,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs any unexpected error during retrieval.
-                _logger.LogError(ex, $"Error retrieving reset token by token value: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while retrieving the reset token by its value.");
                 return Result<ChangePasswordEntity>.Failure("Error retrieving reset token.");
             }
         }
@@ -102,7 +102,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                                                    .ToListAsync();
 
                 // If no tokens are found, operation is considered successful.
-                if (!tokensToDelete.Any())
+                if (tokensToDelete.Count == 0)
                     return Result<bool>.Success(true);
 
                 // Removes the found tokens from the context.
@@ -118,13 +118,13 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (DbUpdateException dbEx)
             {
                 // Logs database-specific update errors.
-                _logger.LogError(dbEx, $"Database error deleting reset tokens for PersonId {personId}, {dbEx.InnerException?.Message ?? dbEx.Message}.");
+                _logger.LogError(dbEx, "Database error deleting reset tokens for PersonId.");
                 return Result<bool>.Failure("Database error deleting reset tokens.");
             }
             catch (Exception ex)
             {
                 // Logs general errors during the deletion process.
-                _logger.LogError(ex, $"Error deleting reset tokens for PersonId {personId}: {ex.Message}");
+                _logger.LogError(ex, "Error deleting reset tokens for PersonId.");
                 return Result<bool>.Failure("Error deleting reset tokens for person.");
             }
         }
@@ -144,7 +144,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs errors during retrieval.
-                _logger.LogError(ex, $"Error retrieving reset token by ID {id}: {ex.Message}"); 
+                _logger.LogError(ex, "Error retrieving reset token by ID."); 
                 return Result<ChangePasswordEntity>.Failure("Error retrieving reset token.");
             }
         }
@@ -162,7 +162,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
             catch (Exception ex)
             {
                 // Logs errors during retrieval.
-                _logger.LogError(ex, $"Error retrieving all reset tokens: {ex.Message}");
+                _logger.LogError(ex, "Error retrieving all reset tokens.");
                 return Result<IEnumerable<ChangePasswordEntity>>.Failure("Error retrieving all reset tokens.");
             }
         }
@@ -193,7 +193,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                                                   .ToListAsync(); // Materialize the list to avoid issues during RemoveRange.
 
                 // 2. Mark any existing tokens for deletion.
-                if (tokensToDelete.Any())
+                if (tokensToDelete.Count != 0)
                 {
                     _context.Changepassword.RemoveRange(tokensToDelete);
                     _logger.LogInformation("Marked {Count} existing reset tokens for deletion for PersonId {PersonId}.", tokensToDelete.Count, entity.PersonId);
@@ -216,7 +216,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Repositories
                 _logger.LogDebug("SaveChangesAsync completed within Create reset token transaction. Rows affected: {RowsAffected}", affectedRows);
 
                 // Optional check: Ensure at least the insert happened.
-                if (affectedRows == 0 && !tokensToDelete.Any()) // If nothing was deleted and nothing was inserted
+                if (affectedRows == 0 && tokensToDelete.Count == 0) // If nothing was deleted and nothing was inserted
                 {
                     _logger.LogWarning("SaveChangesAsync reported 0 rows affected while creating reset token for PersonId {PersonId}, and no prior tokens were deleted.", entity.PersonId);
                     // Rollback as the intended operation likely failed silently.

@@ -52,9 +52,13 @@
         {
             // Validates that required string fields are provided.
             if (string.IsNullOrWhiteSpace(logType))
-                throw new ArgumentException("El tipo de log es requerido.", nameof(logType));
+            {
+                throw new ArgumentException("The log type is required.", nameof(logType));
+            }
             if (string.IsNullOrWhiteSpace(logMessage))
-                throw new ArgumentException("El mensaje de log es requerido.", nameof(logMessage));
+            {
+                throw new ArgumentException("The log message is required.", nameof(logMessage));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdDeviceLog = idDeviceLog;

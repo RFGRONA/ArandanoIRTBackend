@@ -102,14 +102,17 @@
         {
             // Validates that required string arguments are provided.
             if (string.IsNullOrWhiteSpace(tableName))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("El nombre de la tabla es requerido.", nameof(tableName));
+            { 
+                throw new ArgumentException("The table name is required.", nameof(tableName));
+            }
             if (string.IsNullOrWhiteSpace(columnName))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("El nombre de la columna es requerido.", nameof(columnName));
+            {
+                throw new ArgumentException("The column name is required.", nameof(columnName));
+            }
             if (string.IsNullOrWhiteSpace(action))
-                // Throws exception with the original Spanish message.
-                throw new ArgumentException("La acción es requerida.", nameof(action));
+            { 
+                throw new ArgumentException("The action is required.", nameof(action));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdAuditDataTable = idAuditDataTable;

@@ -1,7 +1,7 @@
 ﻿using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using UAParser;
 
-namespace ArandanoIRT_Backend.Infrastructure.Utilities 
+namespace ArandanoIRT_Backend.Infrastructure.Utilities
 {
     /// <summary>
     /// Implements the <see cref="IUserAgentParser"/> interface by adapting the UAParser library (uap-csharp)
@@ -11,9 +11,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
     {
         /// <summary>
         /// Thread-safe static instance of the UAParser library's main parser.
-        /// Initialized once using the default regex definitions.
         /// </summary>
-        private static readonly Parser _parser = Parser.GetDefault();
+        private static readonly Parser _parser = Parser.GetDefault(); // Initialized once
         /// <summary>
         /// Logger for recording adapter activity and potential parsing errors.
         /// </summary>
@@ -31,43 +30,89 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Uses the UAParser library to parse the input string.
-        /// Returns a <see cref="Domain.ValueObjects.ClientInfo"/> record with default values ("Unknown", etc.)
-        /// if the input string is null/empty or if a parsing error occurs.
+        /// Uses the UAParser library to parse the input string. Delegates mapping to a helper method.
+        /// Returns default values if input is null/empty or parsing fails.
         /// </remarks>
         public Domain.ValueObjects.ClientInfo Parse(string? userAgentString)
         {
-            // Handles null or whitespace input by returning a default ClientInfo object.
+            // Handle null or whitespace input
             if (string.IsNullOrWhiteSpace(userAgentString))
             {
-                return new Domain.ValueObjects.ClientInfo(); // Return default values.
+                // Return default domain ClientInfo value
+                return new Domain.ValueObjects.ClientInfo();
             }
 
             try
             {
-                // Calls the UAParser library's Parse method to get structured UA info.
-                // Note: This 'ClientInfo' is the type from the UAParser library.
-                UAParser.ClientInfo? clientInfoResult = _parser.Parse(userAgentString);
+                // Parse using the UAParser library
+                // Note: 'parsedInfo' is the type from the UAParser library.
+                UAParser.ClientInfo? parsedInfo = _parser.Parse(userAgentString);
 
-                // Formats the version strings using the private helper method.
-                string uaVersion = GetVersion(clientInfoResult?.UA?.Major, clientInfoResult?.UA?.Minor, clientInfoResult?.UA?.Patch);
-                string osVersion = GetVersion(clientInfoResult?.OS?.Major, clientInfoResult?.OS?.Minor, clientInfoResult?.OS?.Patch);
-
-                // Maps the parsed results (or defaults if null) to the application's domain ClientInfo record.
-                return new Domain.ValueObjects.ClientInfo(
-                    UserAgentFamily: clientInfoResult?.UA?.Family ?? "Unknown",
-                    UserAgentVersion: uaVersion,
-                    OSFamily: clientInfoResult?.OS?.Family ?? "Unknown OS",
-                    OSVersion: osVersion,
-                    DeviceFamily: clientInfoResult?.Device?.Family ?? "Unknown Device"
-                );
+                // Delegate mapping to helper method
+                return MapToDomainClientInfo(parsedInfo, userAgentString); // Pass original string for logging on null
             }
-            catch (Exception ex) // Catches potential errors during UAParser execution.
+            catch (Exception ex) // Catch potential errors during UAParser execution.
             {
                 _logger.LogError(ex, "Failed to parse User-Agent string: {UserAgent}", userAgentString);
-                // Returns a default ClientInfo object if parsing fails.
+                // Return default domain ClientInfo value on error
                 return new Domain.ValueObjects.ClientInfo();
             }
+        }
+
+        /// <summary>
+        /// Maps the result from the UAParser library to the application's domain ClientInfo object.
+        /// </summary>
+        /// <param name="parserResult">The result from UAParser.Parser.Parse().</param>
+        /// <param name="originalUserAgent">Original UA string for logging purposes if result is null.</param>
+        /// <returns>The application's domain ClientInfo object.</returns>
+        private Domain.ValueObjects.ClientInfo MapToDomainClientInfo(UAParser.ClientInfo? parserResult, string originalUserAgent)
+        {
+            // Handle null result from the parser
+            if (parserResult == null)
+            {
+                _logger.LogWarning("UAParser returned null result for User-Agent: {UserAgent}", originalUserAgent);
+                return new Domain.ValueObjects.ClientInfo(); // Return default
+            }
+
+            // Extract versions using helpers that handle null UA/OS objects
+            string uaVersion = GetVersion(parserResult.UA);
+            string osVersion = GetVersion(parserResult.OS);
+
+            // Extract families using null-coalescing operator
+            string uaFamily = parserResult.UA?.Family ?? "Unknown";
+            string osFamily = parserResult.OS?.Family ?? "Unknown OS";
+            string deviceFamily = parserResult.Device?.Family ?? "Unknown Device";
+
+            // Construct the domain ClientInfo object
+            return new Domain.ValueObjects.ClientInfo(
+                UserAgentFamily: uaFamily,
+                UserAgentVersion: uaVersion,
+                OSFamily: osFamily,
+                OSVersion: osVersion,
+                DeviceFamily: deviceFamily
+            );
+        }
+
+        /// <summary>
+        /// Gets the formatted version string from a UAParser UserAgent object.
+        /// </summary>
+        /// <param name="ua">The UAParser UserAgent object.</param>
+        /// <returns>Formatted version string or empty string.</returns>
+        private static string GetVersion(UserAgent? ua)
+        {
+            // Delegate to the core version string builder if UA is not null
+            return ua == null ? string.Empty : BuildVersionString(ua.Major, ua.Minor, ua.Patch);
+        }
+
+        /// <summary>
+        /// Gets the formatted version string from a UAParser OS object.
+        /// </summary>
+        /// <param name="os">The UAParser OS object.</param>
+        /// <returns>Formatted version string or empty string.</returns>
+        private static string GetVersion(OS? os)
+        {
+            // Delegate to the core version string builder if OS is not null
+            return os == null ? string.Empty : BuildVersionString(os.Major, os.Minor, os.Patch);
         }
 
         /// <summary>
@@ -77,26 +122,14 @@ namespace ArandanoIRT_Backend.Infrastructure.Utilities
         /// <param name="major">The major version part (nullable).</param>
         /// <param name="minor">The minor version part (nullable).</param>
         /// <param name="patch">The patch version part (nullable).</param>
-        /// <returns>A formatted version string (e.g., "10.2.1", "11.5", "12", "") or an empty string if major is null/empty.</returns>
-        private string GetVersion(string? major, string? minor, string? patch)
+        /// <returns>A formatted version string (e.g., "10.2.1", "11.5", "12") or an empty string if major is null/empty.</returns>
+        private static string BuildVersionString(string? major, string? minor, string? patch) // Renamed from GetVersion
         {
-            // Concatenates version parts if major version exists.
-            if (!string.IsNullOrWhiteSpace(major))
-            {
-                // Adds minor version if available.
-                if (!string.IsNullOrWhiteSpace(minor))
-                {
-                    // Adds patch version if available.
-                    if (!string.IsNullOrWhiteSpace(patch))
-                        return $"{major}.{minor}.{patch}";
-                    // Returns major.minor if patch is missing.
-                    return $"{major}.{minor}";
-                }
-                // Returns only major if minor/patch are missing.
-                return major;
-            }
-            // Returns empty string if major version is missing.
-            return string.Empty;
+            // Use string.Join for potentially cleaner concatenation (though nested ifs are also fine)
+            var parts = new[] { major, minor, patch };
+            var validParts = parts.Where(p => !string.IsNullOrWhiteSpace(p)).ToArray(); // Filter out null/empty/whitespace
+
+            return validParts.Length > 0 ? string.Join(".", validParts) : string.Empty;
         }
     }
 }

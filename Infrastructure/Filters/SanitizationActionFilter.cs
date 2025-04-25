@@ -4,12 +4,12 @@ using ArandanoIRT_Backend.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Reflection;
 
-namespace ArandanoIRT_Backend.Infrastructure.Filters 
+namespace ArandanoIRT_Backend.Infrastructure.Filters
 {
     /// <summary>
     /// An ASP.NET Core action filter that automatically sanitizes string properties
     /// marked with the <see cref="SanitizeHtmlAttribute"/> on action method arguments (typically DTOs).
-    /// Uses the registered <see cref="SanitizerService"/> to remove HTML tags.
+    /// Uses the registered <see cref="ISanitizerService"/> to remove potentially harmful elements.
     /// </summary>
     public class SanitizationActionFilter : IAsyncActionFilter
     {
@@ -40,61 +40,86 @@ namespace ArandanoIRT_Backend.Infrastructure.Filters
             // Iterates through the arguments passed to the action method.
             foreach (var argument in context.ActionArguments.Values)
             {
-                // Skips null arguments or value types (sanitization applies to properties of objects).
+                // Skips null arguments, value types, or direct strings (sanitization applies to properties of objects).
                 if (argument == null || argument.GetType().IsValueType || argument is string)
                 {
                     continue;
                 }
 
-                // Gets the type of the argument (e.g., the DTO type).
-                var argumentType = argument.GetType();
-
-                // Gets all public instance properties of the argument type.
-                var properties = argumentType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-                // Iterates through the properties of the argument object.
-                foreach (var property in properties)
-                {
-                    // Checks if the property is marked with [SanitizeHtml] and is a writable string.
-                    bool needsSanitization = property.GetCustomAttribute<SanitizeHtmlAttribute>() != null;
-                    bool isWritableString = property.PropertyType == typeof(string) && property.CanRead && property.CanWrite;
-
-                    if (needsSanitization && isWritableString)
-                    {
-                        try
-                        {
-                            // Gets the current value of the string property.
-                            string? currentValue = property.GetValue(argument) as string;
-
-                            // If the value is not null or empty, sanitize it.
-                            if (!string.IsNullOrEmpty(currentValue))
-                            {
-                                string sanitizedValue = _sanitizer.Sanitize(currentValue);
-
-                                // If sanitization changed the value, update the property on the argument object.
-                                if (currentValue != sanitizedValue)
-                                {
-                                    property.SetValue(argument, sanitizedValue);
-                                    _logger.LogDebug("Sanitized property {PropertyName} on type {TypeName}.", property.Name, argumentType.Name);
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // Logs unexpected errors during reflection/sanitization but continues execution.
-                            _logger.LogError(ex, "Error sanitizing property {PropertyName} on type {TypeName}.", property.Name, argumentType.Name);
-                        }
-                    }
-                    else if (needsSanitization && !isWritableString)
-                    {
-                        // Logs a warning if [SanitizeHtml] is placed on an invalid property type.
-                        _logger.LogWarning("SanitizeHtmlAttribute placed on non-writable string property {PropertyName} on type {TypeName}.", property.Name, argumentType.Name);
-                    }
-                }
+                SanitizeObjectProperties(argument);
             }
 
             // Proceeds to execute the next filter or the action method itself.
             await next();
+        }
+
+        /// <summary>
+        /// Sanitizes properties of a given object instance based on the SanitizeHtmlAttribute.
+        /// </summary>
+        /// <param name="obj">The object instance whose properties should be sanitized.</param>
+        private void SanitizeObjectProperties(object obj)
+        {
+            // Gets the type of the object.
+            var objectType = obj.GetType();
+            // Gets all public instance properties of the object type.
+            var properties = objectType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            // Iterates through the properties of the object.
+            foreach (var property in properties)
+            {
+                SanitizePropertyIfNeeded(property, obj, objectType);
+            }
+        }
+
+        /// <summary>
+        /// Checks a specific property for the SanitizeHtmlAttribute and sanitizes its value if necessary.
+        /// </summary>
+        /// <param name="property">The PropertyInfo object representing the property.</param>
+        /// <param name="targetObject">The object instance containing the property.</param>
+        /// <param name="targetType">The type of the target object (passed for logging).</param>
+        private void SanitizePropertyIfNeeded(PropertyInfo property, object targetObject, Type targetType)
+        {
+            // Checks if the property is marked with [SanitizeHtml].
+            bool needsSanitization = property.GetCustomAttribute<SanitizeHtmlAttribute>() != null;
+            if (!needsSanitization)
+            {
+                return; // Skip if attribute is not present
+            }
+
+            // Checks if the property is a writable string.
+            bool isWritableString = property.PropertyType == typeof(string) && property.CanRead && property.CanWrite;
+
+            if (isWritableString)
+            {
+                try
+                {
+                    // Gets the current value of the string property.
+                    string? currentValue = property.GetValue(targetObject) as string;
+
+                    // If the value is not null or empty, sanitize it.
+                    if (!string.IsNullOrEmpty(currentValue))
+                    {
+                        string sanitizedValue = _sanitizer.Sanitize(currentValue);
+
+                        // If sanitization changed the value, update the property on the argument object.
+                        if (currentValue != sanitizedValue)
+                        {
+                            property.SetValue(targetObject, sanitizedValue);
+                            _logger.LogDebug("Sanitized property {PropertyName} on type {TypeName}.", property.Name, targetType.Name);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Logs unexpected errors during reflection/sanitization but continues execution.
+                    _logger.LogError(ex, "Error sanitizing property {PropertyName} on type {TypeName}.", property.Name, targetType.Name);
+                }
+            }
+            else // needsSanitization was true, but it's not a writable string
+            {
+                // Logs a warning if [SanitizeHtml] is placed on an invalid property type.
+                _logger.LogWarning("SanitizeHtmlAttribute placed on non-writable/non-string property {PropertyName} on type {TypeName}.", property.Name, targetType.Name);
+            }
         }
     }
 }

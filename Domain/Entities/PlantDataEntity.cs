@@ -24,7 +24,7 @@
         /// <summary>
         /// Gets the date and time (usually UTC) when the plant record was last updated. Nullable if never updated.
         /// </summary>
-        public DateTime? UpdatedAt { get; private set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Gets the identifier representing the current status of the plant (e.g., Healthy, Diseased, Harvested). Nullable.
@@ -59,7 +59,9 @@
         {
             // Validates that the plant name is provided.
             if (string.IsNullOrWhiteSpace(namePlant))
-                throw new ArgumentException("El nombre de la planta es requerido.", nameof(namePlant));
+            {
+                throw new ArgumentException("The plant name is required.", nameof(namePlant));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdPlantState = idPlantState;

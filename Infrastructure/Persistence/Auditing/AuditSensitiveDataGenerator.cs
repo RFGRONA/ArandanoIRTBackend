@@ -11,7 +11,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
     /// like tokens, passwords, invitations, and activations.
     /// This generator focuses on logging the action itself, not the old/new values.
     /// </summary>
-    public class AuditSensitiveDataGenerator (ILogger<AuditSensitiveDataGenerator> logger) : IAuditEntryGenerator
+    public class AuditSensitiveDataGenerator(ILogger<AuditSensitiveDataGenerator> logger) : IAuditEntryGenerator
     {
         /// <summary>
         /// Logger instance for logging audit generation events.
@@ -32,7 +32,6 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
                    entry.Entity is Devicetoken ||
                    entry.Entity is Cropinvitation ||
                    entry.Entity is Deviceactivation;
-            // Add other types here if necessary.
         }
 
         /// <inheritdoc/>
@@ -44,45 +43,37 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// </remarks>
         public IEnumerable<object> GenerateEntries(EntityEntry entry, AuditMetadata metadata)
         {
-            // Performs a check intended to ensure the entity is one of the expected types handled by CanHandle.
-            if (entry.Entity is not Changepassword &&
-                entry.Entity is not Refreshtoken &&
-                entry.Entity is not Devicetoken &&
-                entry.Entity is not Cropinvitation &&
-                entry.Entity is not Deviceactivation)
+            // Redundant check (already covered by CanHandle), but acts as a safeguard.
+            // Consider simplifying if CanHandle is always called first reliably.
+            if (!(entry.Entity is Changepassword ||
+                  entry.Entity is Refreshtoken ||
+                  entry.Entity is Devicetoken ||
+                  entry.Entity is Cropinvitation ||
+                  entry.Entity is Deviceactivation))
             {
                 _logger.LogWarning("AuditSensitiveDataGenerator potentially called with unexpected type (check logic): {EntityType}", entry.Entity.GetType().Name);
                 return Enumerable.Empty<object>(); // Returns an empty collection.
             }
 
-            // Creates the specific audit entity instance ('Auditsensitivedata').
             var audit = new Auditsensitivedata
             {
-                // Assigns common metadata.
+                // Common metadata
                 Performedat = metadata.PerformedAt,
                 Performedby = metadata.UserId,
                 Performedbyip = metadata.IpAddress,
                 Useragent = metadata.UserAgent,
 
-                // Sets specific data for AuditSensitiveData.
-                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, // Name of the affected table.
-                Columnname = "ALL", // Indicates the action applies to the whole entity.
-                Action = entry.State.ToString().ToUpperInvariant(), // INSERT, UPDATE, DELETE.
-
-                // Gets the ID of the affected record (PK) using the local helper.
-                Recordid = GetPrimaryKeyValue(entry),
-
-                // Attempts to get CropId if available directly on the entity using the local helper.
-                Cropid = GetCropIdValue(entry) // Will be null if CropId property doesn't exist on the entity.
+                // Specific data
+                Tablename = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
+                Columnname = "ALL",
+                Action = entry.State.ToString().ToUpperInvariant(),
+                Recordid = GetPrimaryKeyValue(entry), // Use refactored helper
+                Cropid = GetCropIdValue(entry) // Use local helper
             };
 
-            // Logs the generation attempt.
             _logger.LogInformation("Generating AuditSensitiveData for {TableName} ID: {RecordId}, Action: {Action}",
-                                audit.Tablename, audit.Recordid, audit.Action);
+                                   audit.Tablename, audit.Recordid, audit.Action);
 
-            // OldValue and NewValue are intentionally not set for sensitive data audits.
-
-            // Returns a list containing the single generated audit entry object.
             return new List<object> { audit };
         }
 
@@ -94,33 +85,50 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         private int GetPrimaryKeyValue(EntityEntry entry)
         {
             var primaryKey = entry.Metadata.FindPrimaryKey();
-            if (primaryKey != null && primaryKey.Properties.Count == 1)
-            {
-                var pkProperty = primaryKey.Properties.First();
-                // Tries CurrentValue first, even for DELETE state.
-                var pkValue = entry.Property(pkProperty.Name)?.CurrentValue;
 
-                if (pkValue is int intValue)
-                {
-                    return intValue;
-                }
-                // If used for DELETE and CurrentValue failed (e.g., entity not fully loaded), try OriginalValue.
-                if (entry.State == EntityState.Deleted)
-                {
-                    pkValue = entry.Property(pkProperty.Name)?.OriginalValue;
-                    if (pkValue is int intValueDeleted) return intValueDeleted;
-                }
-
-                _logger.LogWarning("Could not get PK of type INT for {TableName}. PK Name: {PKName}, PK Type: {PKType}",
-                                entry.Metadata.GetTableName() ?? "<Unknown>", pkProperty.Name, pkValue?.GetType().Name ?? "null");
-            }
-            else // Handles null or composite PK
+            // Guard Clause 1: No Primary Key found
+            if (primaryKey == null)
             {
-                _logger.LogWarning("Could not determine unique PK for {TableName}.", entry.Metadata.GetTableName() ?? "<Unknown>");
+                LogWarningNoOrCompositePK(entry, "No primary key found");
+                return 0;
             }
 
-            // If RecordId in the audit table can be 0 for error/INSERT cases, return 0.
-            return 0;
+            // Guard Clause 2: Composite Primary Key found
+            if (primaryKey.Properties.Count != 1)
+            {
+                LogWarningNoOrCompositePK(entry, "Composite primary key found");
+                return 0;
+            }
+
+            // --- We know we have a single primary key property here ---
+            var pkProperty = primaryKey.Properties[0];
+            var pkPropertyEntry = entry.Property(pkProperty.Name);
+
+            // Try CurrentValue first
+            object? currentValue = pkPropertyEntry?.CurrentValue;
+            if (currentValue is int currentIntValue)
+            {
+                return currentIntValue; // Found valid PK int value
+            }
+
+            // Fallback: Try OriginalValue only if state is Deleted AND CurrentValue failed
+            if (entry.State == EntityState.Deleted)
+            {
+                object? originalValue = pkPropertyEntry?.OriginalValue;
+                if (originalValue is int originalIntValue)
+                {
+                    return originalIntValue; // Found valid PK int value in OriginalValue
+                }
+            }
+
+            // If we reached here, no valid integer PK could be determined. Log why.
+            // Determine which value caused the failure (usually CurrentValue, unless OriginalValue was attempted)
+            object? failedValue = (entry.State == EntityState.Deleted && !(currentValue is int))
+                                   ? pkPropertyEntry?.OriginalValue // Log about original if it was checked and failed
+                                   : currentValue;                 // Otherwise log about current
+
+            LogWarningPrimaryKeyNotInt(entry, pkProperty.Name, failedValue);
+            return 0; // Return default value on failure
         }
 
         /// <summary>
@@ -128,30 +136,42 @@ namespace ArandanoIRT_Backend.Infrastructure.Persistence.Auditing
         /// </summary>
         /// <param name="entry">The EntityEntry representing the tracked entity.</param>
         /// <returns>The integer CropId value if found, otherwise null.</returns>
-        private int? GetCropIdValue(EntityEntry entry)
+        private static int? GetCropIdValue(EntityEntry entry)
         {
             // Tries to get the property "CropId" or "Cropid" (case-insensitive).
-            var cropIdProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name.Equals("CropId", StringComparison.OrdinalIgnoreCase) || p.Metadata.Name.Equals("Cropid", StringComparison.OrdinalIgnoreCase));
+            var cropIdProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name.Equals("CropId", StringComparison.OrdinalIgnoreCase)); // Simplified check
 
             if (cropIdProp != null)
             {
-                // Tries CurrentValue first.
-                if (cropIdProp.CurrentValue is int cropId)
+                // Prioritize CurrentValue, fallback to OriginalValue if Current is null or state is Deleted
+                var value = (entry.State == EntityState.Deleted)
+                               ? cropIdProp.OriginalValue ?? cropIdProp.CurrentValue // Prefer original if deleted, but take current if original is null somehow
+                               : cropIdProp.CurrentValue ?? cropIdProp.OriginalValue; // Prefer current, fallback to original if null
+
+                if (value is int cropId)
                 {
                     return cropId;
                 }
-                // For DELETE, try OriginalValue if CurrentValue is null (less likely for FK).
-                if (entry.State == EntityState.Deleted && cropIdProp.OriginalValue is int originalCropId)
-                {
-                    return originalCropId;
-                }
             }
+            return null; // Returns null if the property is not found or its value is not an integer.
+        }
 
-            // Attempt to get it from a navigation property if not direct (more complex, avoid if possible in interceptor).
-            // Example: if (entry.Entity is DeviceData dd && dd.Crop != null) return dd.Crop.Idcrop;
+        // --- Private Logging Helper Methods ---
 
-            // Returns null if the property is not found or its value is not an integer.
-            return null;
+        private void LogWarningNoOrCompositePK(EntityEntry entry, string reason)
+        {
+            _logger.LogWarning("Could not determine unique PK for {TableName}. Reason: {Reason}.",
+                               entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name, // Use entity type as fallback for table name
+                               reason);
+        }
+
+        private void LogWarningPrimaryKeyNotInt(EntityEntry entry, string pkName, object? pkValue)
+        {
+            _logger.LogWarning("Could not get PK of type INT for {TableName}. PK Name: {PKName}, PK Value: {PKValue}, PK Type: {PKType}",
+                               entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
+                               pkName,
+                               pkValue ?? "null", // Show "null" explicitly if value is null
+                               pkValue?.GetType().Name ?? "null");
         }
     }
 }

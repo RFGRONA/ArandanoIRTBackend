@@ -36,7 +36,7 @@
         /// Gets the date and time (usually UTC) when the device was successfully activated using this code.
         /// Nullable if the code has not been used yet.
         /// </summary>
-        public DateTime? ActivatedAt { get; private set; }
+        public DateTime? ActivatedAt { get; set; }
 
         /// <summary>
         /// Gets the identifier representing the current status of the activation code

@@ -58,7 +58,9 @@
         {
             // Validates that thermal image data is provided.
             if (string.IsNullOrWhiteSpace(thermalImageData))
-                throw new ArgumentException("Thermal image data is required.", nameof(thermalImageData)); 
+            {
+                throw new ArgumentException("Thermal image data is required.", nameof(thermalImageData));
+            }
 
             ArgumentNullException.ThrowIfNull(rgbImageData, nameof(rgbImageData));
 

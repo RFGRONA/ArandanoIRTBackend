@@ -32,18 +32,33 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         private const string VerifyEndpoint = "https://challenges.cloudflare.com/api/v3/siteverify";
 
         /// <summary>
+        /// Shared, pre-configured JSON serializer options specifically for deserializing Turnstile responses.
+        /// Configured to ignore case for property names ('Success', 'error-codes') during deserialization,
+        /// aligning with the typical JSON response format which might use different casing.
+        /// </summary>
+        /// <remarks>
+        /// Stored as static readonly to optimize performance by avoiding repeated instantiation.
+        /// </remarks>
+        private static readonly JsonSerializerOptions _turnstileJsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        /// <summary>
         /// Represents the deserialized JSON response from the Cloudflare Turnstile siteverify endpoint.
         /// </summary>
         private class TurnstileResponse
         {
             /// <summary>
             /// Gets or sets a value indicating whether the CAPTCHA verification was successful.
+            /// Mapped from the 'success' field in the JSON response.
             /// </summary>
             public bool Success { get; set; }
             // Add other fields like 'hostname', 'action', 'cdata' if needed for more detailed validation.
 
             /// <summary>
             /// Gets or sets a list of error codes returned by Cloudflare if verification failed. Nullable.
+            /// Mapped from the 'error-codes' field in the JSON response.
             /// </summary>
             [System.Text.Json.Serialization.JsonPropertyName("error-codes")]
             public List<string>? ErrorCodes { get; set; }
@@ -55,21 +70,23 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         /// <param name="httpClientFactory">The factory for creating HttpClient instances.</param>
         /// <param name="configuration">The application configuration provider.</param>
         /// <param name="logger">The logger instance for this service.</param>
-        /// <exception cref="ArgumentNullException">Thrown if httpClientFactory, configuration, logger, or the 'Captcha:TurnstileSecretKey' configuration value is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if httpClientFactory, configuration, or logger is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the 'Captcha:TurnstileSecretKey' configuration value is null or empty.</exception>
         public CloudflareTurnstileService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<CloudflareTurnstileService> logger)
         {
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             // Retrieves the secret key from configuration, throwing if not found.
-            _secretKey = _configuration["Captcha:TurnstileSecretKey"] ?? throw new ArgumentNullException("Captcha:TurnstileSecretKey", "Turnstile Secret Key ('Captcha:TurnstileSecretKey') not found in configuration.");
+            _secretKey = _configuration["Captcha:TurnstileSecretKey"] ?? throw new InvalidOperationException("Turnstile Secret Key ('Captcha:TurnstileSecretKey') not found in configuration. Service cannot operate.");
         }
 
         /// <inheritdoc/>
         /// <remarks>
-        /// This method communicates with the Cloudflare Turnstile API endpoint. Its success depends on
+        /// This method communicates with the Cloudflare Turnstile API endpoint (<see cref="VerifyEndpoint"/>). Its success depends on
         /// network connectivity, the availability of the Cloudflare service, and the correct configuration
-        /// of the <c>Captcha:TurnstileSecretKey</c> setting.
+        /// of the <c>Captcha:TurnstileSecretKey</c> setting. It uses cached <see cref="JsonSerializerOptions"/>
+        /// for efficient response deserialization.
         /// </remarks>
         public async Task<Result> VerifyCaptchaAsync(string token)
         {
@@ -87,7 +104,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
                 // Prepares the form data payload for the Cloudflare API request.
                 var content = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
-                    { "secret", _secretKey },     // Includes the secret key.
+                    { "secret", _secretKey },      // Includes the secret key.
                     { "response", token }        // Includes the token received from the frontend widget.
                     // Optionally add 'remoteip' if needed and available: { "remoteip", userIpAddress }
                 });
@@ -108,18 +125,25 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
 
                 // Logs the successful response body for debugging.
                 _logger.LogDebug("Cloudflare Turnstile verification response received: {ResponseBody}", responseBody);
-                // Deserializes the JSON response into the TurnstileResponse object (case-insensitive property matching).
-                var turnstileResponse = JsonSerializer.Deserialize<TurnstileResponse>(responseBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                // Deserializes the JSON response into the TurnstileResponse object using cached options.
+                // The options ensure case-insensitive property matching (e.g., 'success' maps to 'Success').
+                var turnstileResponse = JsonSerializer.Deserialize<TurnstileResponse>(
+                    responseBody,
+                    _turnstileJsonOptions // <-- Uso del campo estático cacheado
+                );
 
                 // Checks if deserialization was successful and if Cloudflare reported success.
                 if (turnstileResponse == null || !turnstileResponse.Success)
                 {
-                    // Logs the failure details provided by Cloudflare.
-                    _logger.LogWarning("Cloudflare Turnstile verification failed. Success: {Success}, Errors: {Errors}",
-                                       turnstileResponse?.Success == true,
-                                       string.Join(", ", turnstileResponse?.ErrorCodes ?? [])); // Use empty list if ErrorCodes is null
-                    // Returns a failure result including the error codes.
-                    return Result.Failure($"CAPTCHA verification failed. Errors: {string.Join(", ", turnstileResponse?.ErrorCodes ?? ["unknown"])}"); // Provide default error if null
+                    // Logs the failure details provided by Cloudflare. Uses ?? [] for null safety on ErrorCodes.
+                    _logger.LogWarning("Cloudflare Turnstile verification failed. Success: {Success}, Errors: [{Errors}]",
+                                       turnstileResponse?.Success == true, // Log the actual reported success value
+                                       string.Join(", ", turnstileResponse?.ErrorCodes ?? [])); // Log errors safely
+
+                    // Returns a failure result including the error codes. Provides a default if ErrorCodes is null/empty.
+                    var errorString = string.Join(", ", turnstileResponse?.ErrorCodes ?? []);
+                    return Result.Failure($"CAPTCHA verification failed. Errors: {(string.IsNullOrEmpty(errorString) ? "unknown" : errorString)}");
                 }
 
                 // Verification was fully successful.

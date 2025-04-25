@@ -29,7 +29,9 @@
         {
             // Validates that the table name is provided.
             if (string.IsNullOrWhiteSpace(tableName))
-                throw new ArgumentException("El nombre de la tabla es requerido.", nameof(tableName));
+            {
+                throw new ArgumentException("The table name is required.", nameof(tableName));
+            }
 
             // Assigns validated parameters to the corresponding properties.
             IdTableRelation = idTableRelation;

@@ -145,7 +145,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         /// <summary>
         /// Creates a new RefreshTokenEntity instance with provided details.
         /// </summary>
-        private RefreshTokenEntity CreateRefreshTokenEntity(
+        private static RefreshTokenEntity CreateRefreshTokenEntity(
             int personId, long sessionId, string tokenValue, string? deviceInfo,
             string ipAddress, string userAgent, DateTime createdAt, DateTime expiresAt)
         {
@@ -462,6 +462,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = expires.ToUniversalTime(),
+                NotBefore = _dateTimeProvider.GetUtcNow().AddSeconds(-5), 
+                IssuedAt = _dateTimeProvider.GetUtcNow(), 
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
                 // Issuer = _issuer, 
                 // Audience = _audience 
@@ -474,7 +476,7 @@ namespace ArandanoIRT_Backend.Infrastructure.Services
         /// <summary>
         /// Generates a cryptographically secure random string (Base64Url encoded).
         /// </summary>
-        private string GenerateSecureRandomString(int byteLength = 32)
+        private static string GenerateSecureRandomString(int byteLength = 32)
         {
             using var rng = RandomNumberGenerator.Create();
             var randomBytes = new byte[byteLength];

@@ -72,8 +72,9 @@
             int cropId)
         {
             // Validates that the access code is provided.
-            if (string.IsNullOrWhiteSpace(accessCode))
-                throw new ArgumentException("El código de acceso es requerido.", nameof(accessCode));
+            if (string.IsNullOrWhiteSpace(accessCode)){
+                throw new ArgumentException("The access code is required.", nameof(accessCode));
+            }
 
             IdCropInvitation = idCropInvitation;
             AccessCode = accessCode; 
