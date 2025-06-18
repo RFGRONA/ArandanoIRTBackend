@@ -3,7 +3,6 @@ using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using ArandanoIRT_Backend.Domain.Entities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
-using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

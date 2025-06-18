@@ -1,4 +1,4 @@
-﻿using ArandanoIRT_Backend.Application.DTOs.Objetcts;
+﻿using ArandanoIRT_Backend.Application.DTOs.Objects;
 using ArandanoIRT_Backend.Infrastructure.Attributes;
 using System.ComponentModel.DataAnnotations; // <- This line remains uncommented as requested.
 

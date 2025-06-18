@@ -1,7 +1,7 @@
 ﻿using ArandanoIRT_Backend.Infrastructure.Attributes;
 using System.ComponentModel.DataAnnotations;
 
-namespace ArandanoIRT_Backend.Application.DTOs.Objetcts 
+namespace ArandanoIRT_Backend.Application.DTOs.Objects 
 {
     /// <summary>
     /// Represents basic information about a specific crop.

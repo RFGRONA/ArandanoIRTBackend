@@ -1,5 +1,4 @@
-﻿using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
-using ArandanoIRT_Backend.Infrastructure.Services; 
+﻿using ArandanoIRT_Backend.Infrastructure.Services; 
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;

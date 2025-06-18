@@ -6,7 +6,6 @@ using ArandanoIRT_Backend.Application.Utilities;
 using ArandanoIRT_Backend.Domain.Entities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
-using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
 
 namespace ArandanoIRT_Backend.Application.Services
 {

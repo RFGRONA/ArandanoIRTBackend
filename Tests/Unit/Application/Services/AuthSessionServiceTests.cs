@@ -4,11 +4,10 @@ using ArandanoIRT_Backend.Application.Services;
 using ArandanoIRT_Backend.Domain.Entities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Domain.ValueObjects;
-using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices; 
 using FluentAssertions;
 using Moq;
 using Xunit;
-using System.Security.Cryptography; 
+using System.Security.Cryptography;
 
 
 namespace ArandanoIRT_Backend.Tests.Application.Services

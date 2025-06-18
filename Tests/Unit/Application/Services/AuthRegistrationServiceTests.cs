@@ -1,5 +1,5 @@
 ﻿using ArandanoIRT_Backend.Application.DTOs.Auth;
-using ArandanoIRT_Backend.Application.DTOs.Objetcts;
+using ArandanoIRT_Backend.Application.DTOs.Objects;
 using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using ArandanoIRT_Backend.Application.Services;
 using ArandanoIRT_Backend.Domain.Entities;

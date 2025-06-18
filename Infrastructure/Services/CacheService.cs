@@ -1,4 +1,4 @@
-﻿using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
+﻿using ArandanoIRT_Backend.Application.Interfaces.Utilities;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace ArandanoIRT_Backend.Infrastructure.Services

@@ -1,7 +1,6 @@
 ﻿using ArandanoIRT_Backend.Application.DTOs.Auth;
 using ArandanoIRT_Backend.Application.Interfaces.IServices;
 using ArandanoIRT_Backend.Application.Interfaces.Utilities;
-using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
 using ArandanoIRT_Backend.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
