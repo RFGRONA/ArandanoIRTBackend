@@ -4,6 +4,7 @@ using Serilog;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Authentication;
 
 namespace ArandanoIRT_Backend.Infrastructure.Config
 {
@@ -54,6 +55,23 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             });
 
             // Returns the IServiceCollection for chaining.
+            return services;
+        }
+
+        /// <summary>
+        /// Configures opaque token authentication for devices using the custom DeviceAuthenticationHandler.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add authentication services to.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional configuration calls can be chained.</returns>
+        public static IServiceCollection AddDeviceAuthentication(this IServiceCollection services)
+        {
+            // Add the device authentication scheme
+            services.AddAuthentication(options =>
+            {
+                // No default scheme specifically for devices here, apply with [Authorize]
+            })
+            .AddScheme<AuthenticationSchemeOptions, DeviceAuthenticationHandler>(DeviceAuthenticationHandler.SchemeName, null);
+
             return services;
         }
 

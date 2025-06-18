@@ -14,11 +14,11 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         /// <summary> Default ID for test sensor data entities. </summary>
         private const int DefaultId = 1;
         /// <summary> Default temperature value for test entities. </summary>
-        private const double DefaultTemperature = 25.5;
+        private const float DefaultTemperature = 25.5f;
         /// <summary> A valid humidity percentage for tests (within 0-100 range). </summary>
-        private const double ValidHumidity = 50.0;
+        private const float ValidHumidity = 50.0f;
         /// <summary> A valid light intensity value for tests (non-negative). </summary>
-        private const double ValidLightIntensity = 5000;
+        private const float ValidLightIntensity = 5000;
         /// <summary> Default timestamp for test entities, usually current UTC time. </summary>
         private static readonly DateTime DefaultTimestamp = DateTime.UtcNow;
         /// <summary> Default plant ID for test entities. </summary>
@@ -42,11 +42,11 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         /// <returns>A new instance of <see cref="SensorDataEntity"/>.</returns>
         private static SensorDataEntity CreateSensorDataEntity(
             int id = DefaultId,
-            double temperature = DefaultTemperature,
-            double humidity = ValidHumidity,
-            double lightIntensity = ValidLightIntensity,
-            double? cityTemperature = null,
-            double? cityHumidity = null,
+            float temperature = DefaultTemperature,
+            float humidity = ValidHumidity,
+            float lightIntensity = ValidLightIntensity,
+            float? cityTemperature = null,
+            float? cityHumidity = null,
             DateTime? recordedAt = null,
             int? plantId = DefaultPlantId,
             int? cropId = DefaultCropId)
@@ -72,7 +72,7 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         public void Constructor_ShouldThrowArgumentOutOfRangeException_WhenHumidityIsLessThanZero()
         {
             // Arrange
-            double invalidHumidity = -0.1;
+            float invalidHumidity = -0.1f;
 
             // Act
             Action act = () => CreateSensorDataEntity(humidity: invalidHumidity);
@@ -91,7 +91,7 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         public void Constructor_ShouldThrowArgumentOutOfRangeException_WhenHumidityIsGreaterThan100()
         {
             // Arrange
-            double invalidHumidity = 100.1;
+            float invalidHumidity = 100.1f;
 
             // Act
             Action act = () => CreateSensorDataEntity(humidity: invalidHumidity);
@@ -110,7 +110,7 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         public void Constructor_ShouldNotThrow_WhenHumidityIsExactlyZero()
         {
             // Arrange
-            double boundaryHumidity = 0.0;
+            float boundaryHumidity = 0.0f;
 
             // Act
             Action act = () => CreateSensorDataEntity(humidity: boundaryHumidity);
@@ -126,7 +126,7 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         public void Constructor_ShouldNotThrow_WhenHumidityIsExactly100()
         {
             // Arrange
-            double boundaryHumidity = 100.0;
+            float boundaryHumidity = 100.0f;
 
             // Act
             Action act = () => CreateSensorDataEntity(humidity: boundaryHumidity);
@@ -142,7 +142,7 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         public void Constructor_ShouldThrowArgumentOutOfRangeException_WhenLightIntensityIsNegative()
         {
             // Arrange
-            double invalidLightIntensity = -1.0;
+            float invalidLightIntensity = -1.0f;
 
             // Act
             Action act = () => CreateSensorDataEntity(lightIntensity: invalidLightIntensity);
@@ -161,7 +161,7 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         public void Constructor_ShouldNotThrow_WhenLightIntensityIsExactlyZero()
         {
             // Arrange
-            double boundaryLightIntensity = 0.0;
+            float boundaryLightIntensity = 0.0f;
 
             // Act
             Action act = () => CreateSensorDataEntity(lightIntensity: boundaryLightIntensity);
@@ -179,11 +179,11 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         {
             // Arrange
             int expectedId = 5;
-            double expectedTemperature = 22.3;
-            double expectedHumidity = 65.7;
-            double expectedLightIntensity = 7800.5;
-            double? expectedCityTemperature = 28.1;
-            double? expectedCityHumidity = 70.2;
+            float expectedTemperature = 22.3f;
+            float expectedHumidity = 65.7f;
+            float expectedLightIntensity = 7800.5f;
+            float? expectedCityTemperature = 28.1f;
+            float? expectedCityHumidity = 70.2f;
             DateTime expectedRecordedAt = DateTime.UtcNow.AddHours(-1);
             int? expectedPlantId = 15;
             int? expectedCropId = 25;
@@ -222,13 +222,13 @@ namespace ArandanoIRT_Backend.Tests.Unit.Domain.Entities
         {
             // Arrange
             int expectedId = 6;
-            double expectedTemperature = 19.0;
-            double expectedHumidity = 40.0;
-            double expectedLightIntensity = 1000;
+            float expectedTemperature = 19.0f;
+            float expectedHumidity = 40.0f;
+            float expectedLightIntensity = 1000f;
             DateTime expectedRecordedAt = DateTime.UtcNow.AddDays(-2);
             // Explicitly setting optional values to null.
-            double? nullCityTemp = null;
-            double? nullCityHumidity = null;
+            float? nullCityTemp = null;
+            float? nullCityHumidity = null;
             int? nullPlantId = null;
             int? nullCropId = null;
 

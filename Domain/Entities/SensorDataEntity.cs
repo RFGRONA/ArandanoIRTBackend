@@ -14,27 +14,27 @@
         /// <summary>
         /// Gets the temperature reading (units depend on sensor configuration, e.g., Celsius).
         /// </summary>
-        public double Temperature { get; private set; }
+        public float Temperature { get; private set; }
 
         /// <summary>
         /// Gets the relative humidity reading (typically as a percentage, 0-100).
         /// </summary>
-        public double Humidity { get; private set; }
+        public float Humidity { get; private set; }
 
         /// <summary>
         /// Gets the light intensity reading (units depend on sensor configuration, e.g., Lux).
         /// </summary>
-        public double LightIntensity { get; private set; }
+        public float LightIntensity { get; private set; }
 
         /// <summary>
         /// Gets the ambient temperature of the city or general area at the time of recording, if available. Nullable.
         /// </summary>
-        public double? CityTemperature { get; private set; }
+        public float? CityTemperature { get; set; }
 
         /// <summary>
         /// Gets the ambient relative humidity of the city or general area at the time of recording, if available. Nullable.
         /// </summary>
-        public double? CityHumidity { get; private set; }
+        public float? CityHumidity { get; set; }
 
         /// <summary>
         /// Gets the date and time (usually UTC) when these sensor readings were recorded.
@@ -69,11 +69,11 @@
         /// </exception>
         public SensorDataEntity(
             int idSensorData,
-            double temperature,
-            double humidity,
-            double lightIntensity,
-            double? cityTemperature,
-            double? cityHumidity,
+            float temperature,
+            float humidity,
+            float lightIntensity,
+            float? cityTemperature,
+            float? cityHumidity,
             DateTime recordedAt,
             int? plantId,
             int? cropId)

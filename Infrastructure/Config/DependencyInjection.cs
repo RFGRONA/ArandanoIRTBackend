@@ -5,7 +5,6 @@ using ArandanoIRT_Backend.Application.Services;
 using ArandanoIRT_Backend.Application.Utilities;
 using ArandanoIRT_Backend.Domain.IRepositories;
 using ArandanoIRT_Backend.Infrastructure.Filters;
-using ArandanoIRT_Backend.Infrastructure.Interfaces.IServices;
 using ArandanoIRT_Backend.Infrastructure.Persistence.Auditing;
 using ArandanoIRT_Backend.Infrastructure.Repositories;
 using ArandanoIRT_Backend.Infrastructure.Services;
@@ -72,6 +71,9 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             services.AddSingleton<IUserAgentParser, UAParserAdapter>(); 
             services.AddScoped<IRequestContextAccessor, RequestContextAccessor>();
             services.AddScoped<IAuthUtilities, AuthUtilities>();
+            services.AddScoped<IDeviceTokenService, DeviceTokenService>();
+            services.AddScoped<IWeatherService, WeatherService>();
+            services.AddScoped<DeviceAuthenticationHandler>();
 
             // --- Infrastructure Layer: Auditing ---
             // Registers auditing helper service and multiple generators for different audit types.
@@ -90,6 +92,8 @@ namespace ArandanoIRT_Backend.Infrastructure.Config
             services.AddScoped<IAuthRegistrationService, AuthRegistrationService>();
             services.AddScoped<IAuthPasswordService, AuthPasswordService>();
             services.AddScoped<IAuthSessionService, AuthSessionService>();
+            services.AddScoped<IDeviceCommunicationService, DeviceCommunicationService>();
+            services.AddScoped<IDeviceManagementService, DeviceManagementService>();
         }
     }
 }
